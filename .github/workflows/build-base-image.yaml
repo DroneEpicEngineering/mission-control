@@ -1,4 +1,4 @@
-name: native multiplatform build (base)
+name: native multiplatform build
 
 on:
   push:
@@ -8,10 +8,12 @@ on:
 
 env:
   REGISTRY: ghcr.io
-  IMAGE_NAME: droneepicengineering/base
+  OWNER_NAME: droneepicengineering
+  BASE_IMAGE_NAME: ${{ env.OWNER_NAME }}/base
+  MISSION_CONTROL_IMAGE_NAME: ${{ env.OWNER_NAME }}/mission-control
 
 jobs:
-  build:
+  build-base:
     strategy:
       matrix:
         include:
@@ -36,7 +38,7 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Build and push image (${{ matrix.platform }})
+      - name: Build and push base image (${{ matrix.platform }})
         uses: docker/build-push-action@v5
         with:
           context: .
@@ -44,8 +46,19 @@ jobs:
           push: true
           platforms: ${{ matrix.platform }}
           tags: |
-            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
-            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ matrix.arch }} 
+            ${{ env.REGISTRY }}/${{ env.BASE_IMAGE_NAME }}:latest
+            ${{ env.REGISTRY }}/${{ env.BASE_IMAGE_NAME }}:${{ matrix.arch }} 
+
+      - name: Build and push mission-control image (${{ matrix.platform }})
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./docker/mission-control.Dockerfile
+          push: true
+          platforms: ${{ matrix.platform }}
+          tags: |
+            ${{ env.REGISTRY }}/${{ env.MISSION_CONTROL_IMAGE_NAME }}:latest
+            ${{ env.REGISTRY }}/${{ env.MISSION_CONTROL_IMAGE_NAME }}:${{ matrix.arch }} 
 
   manifest:
     runs-on: ubuntu-22.04
@@ -63,6 +76,5 @@ jobs:
       - name: Create and push multi-arch manifest
         run: |
           docker buildx imagetools create \
-            -t ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest \
-            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:amd64 \
-            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:arm64
+            -t ${{ env.REGISTRY }}/${{ env.BASE_IMAGE_NAME }}:latest \
+            ${{ env.REGISTRY }}/${{ env.MISSION_CONTROL_IMAGE_NAME }}:latest
