@@ -94,8 +94,15 @@ jobs:
           registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
-      - name: Create and push multi-arch manifest
+      - name: Create and push multi-arch manifest for base
         run: |
           docker buildx imagetools create \
             -t ${{ env.REGISTRY }}/${{ env.OWNER_NAME }}/${{ env.BASE_IMAGE_NAME }}:latest \
-            ${{ env.REGISTRY }}/${{ env.OWNER_NAME }}/${{ env.MISSION_CONTROL_IMAGE_NAME }}:latest
+            ${{ env.REGISTRY }}/${{ env.OWNER_NAME }}/${{ env.BASE_IMAGE_NAME }}:amd64 \
+            ${{ env.REGISTRY }}/${{ env.OWNER_NAME }}/${{ env.BASE_IMAGE_NAME }}:arm64
+      - name: Create and push multi-arch manifest for mission-control
+        run: |
+          docker buildx imagetools create \
+            -t ${{ env.REGISTRY }}/${{ env.OWNER_NAME }}/${{ env.MISSION_CONTROL_IMAGE_NAME }}:latest \
+            ${{ env.REGISTRY }}/${{ env.OWNER_NAME }}/${{ env.MISSION_CONTROL_IMAGE_NAME }}:amd64 \
+            ${{ env.REGISTRY }}/${{ env.OWNER_NAME }}/${{ env.MISSION_CONTROL_IMAGE_NAME }}:arm64
