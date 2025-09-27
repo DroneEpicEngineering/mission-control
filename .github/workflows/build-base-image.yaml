@@ -39,8 +39,8 @@ jobs:
       - name: Build and push image (${{ matrix.platform }})
         uses: docker/build-push-action@v5
         with:
-          context: ./docker
-          file: base.Dockerfile
+          context: .
+          file: ./docker/base.Dockerfile
           push: true
           platforms: ${{ matrix.platform }}
           tags: |
