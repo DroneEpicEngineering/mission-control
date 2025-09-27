@@ -13,7 +13,7 @@ env:
   MISSION_CONTROL_IMAGE_NAME: mission-control
 
 jobs:
-  build:
+  build-base:
     strategy:
       matrix:
         include:
@@ -30,14 +30,12 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-
       - name: Log in to GitHub Container Registry
         uses: docker/login-action@v3
         with:
           registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
-
       - name: Build and push base image (${{ matrix.platform }})
         uses: docker/build-push-action@v5
         with:
@@ -47,8 +45,32 @@ jobs:
           platforms: ${{ matrix.platform }}
           tags: |
             ${{ env.REGISTRY }}/${{ env.OWNER_NAME }}/${{ env.BASE_IMAGE_NAME }}:latest
-            ${{ env.REGISTRY }}/${{ env.OWNER_NAME }}/${{ env.BASE_IMAGE_NAME }}:${{ matrix.arch }} 
+            ${{ env.REGISTRY }}/${{ env.OWNER_NAME }}/${{ env.BASE_IMAGE_NAME }}:${{ matrix.arch }}
 
+  build-mission-control:
+    needs: build-base  
+    strategy:
+      matrix:
+        include:
+          - arch: amd64
+            runner: ubuntu-22.04
+            platform: linux/amd64
+          - arch: arm64
+            runner: ubuntu-22.04-arm
+            platform: linux/arm64
+    runs-on: ${{ matrix.runner }}
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
       - name: Build and push mission-control image (${{ matrix.platform }})
         uses: docker/build-push-action@v5
         with:
@@ -58,11 +80,11 @@ jobs:
           platforms: ${{ matrix.platform }}
           tags: |
             ${{ env.REGISTRY }}/${{ env.OWNER_NAME }}/${{ env.MISSION_CONTROL_IMAGE_NAME }}:latest
-            ${{ env.REGISTRY }}/${{ env.OWNER_NAME }}/${{ env.MISSION_CONTROL_IMAGE_NAME }}:${{ matrix.arch }} 
+            ${{ env.REGISTRY }}/${{ env.OWNER_NAME }}/${{ env.MISSION_CONTROL_IMAGE_NAME }}:${{ matrix.arch }}
 
   manifest:
     runs-on: ubuntu-22.04
-    needs: build
+    needs: build-mission-control  
     permissions:
       packages: write
     steps:
@@ -72,7 +94,6 @@ jobs:
           registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
-
       - name: Create and push multi-arch manifest
         run: |
           docker buildx imagetools create \
