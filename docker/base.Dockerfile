@@ -36,6 +36,8 @@ RUN sudo apt-get update && sudo apt-get upgrade -y \
     ros-dev-tools \
     && sudo rm -rf /var/lib/apt/lists/*
 
+RUN sudo rosdep init
+
 RUN echo "source \"/opt/ros/${ROS_DISTRO}/setup.bash\"" >> "/home/${USERNAME}/.bashrc" 
 
 CMD ["/bin/bash"]
