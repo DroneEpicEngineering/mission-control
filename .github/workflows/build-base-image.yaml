@@ -13,7 +13,7 @@ env:
   MISSION_CONTROL_IMAGE_NAME: mission-control
 
 jobs:
-  build-base:
+  build:
     strategy:
       matrix:
         include:
