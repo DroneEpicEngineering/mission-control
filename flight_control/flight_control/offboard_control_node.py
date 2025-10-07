@@ -1,9 +1,11 @@
 import rclpy
 from rclpy.node import Node
 
-from px4_msgs.msg import OffboardControlMode, VehicleCommand
+from px4_msgs.msg import OffboardControlMode, VehicleCommand, TrajectorySetpoint
 
 from utils.qos_profiles import PX4_PROFILE
+
+from flight_control.coordinate_transforms import enu_to_ned
 
 
 class SingletonMeta(type):
@@ -28,9 +30,11 @@ class OffboardControl(Node, metaclass=SingletonMeta):
         self._offboard_control_mode_pub = self.create_publisher(
             OffboardControlMode, "fmu/in/offboard_control_mode", PX4_PROFILE
         )
-
         self._vehicle_command_pub = self.create_publisher(
             VehicleCommand, "fmu/in/vehicle_command", PX4_PROFILE
+        )
+        self._trajectory_setpoint_pub = self.create_publisher(
+            TrajectorySetpoint, "fmu/in/trajectory_setpoint", PX4_PROFILE
         )
 
     @property
@@ -62,6 +66,27 @@ class OffboardControl(Node, metaclass=SingletonMeta):
         self.__publish_vehicle_command(
             VehicleCommand.VEHICLE_CMD_DO_SET_MODE, param1=1.0, param2=2.0
         )
+
+    def fly_point(self, x: float, y: float, z: float) -> None:
+        msg = TrajectorySetpoint()
+        msg.position = enu_to_ned(x, y, z)
+        msg.timestamp = self.__px4_timestamp_now()
+        self._trajectory_setpoint_pub.publish(msg)
+
+    def fly_velocity(self, x: float, y: float, z: float) -> None:
+        msg = TrajectorySetpoint()
+        msg.position = None
+        msg.velocity = enu_to_ned(x, y, z)
+        msg.timestamp = self.__px4_timestamp_now()
+        self._trajectory_setpoint_pub.publish(msg)
+
+    def fly_acceleration(self, x: float, y: float, z: float) -> None:
+        msg = TrajectorySetpoint()
+        msg.position = None
+        msg.velocity = None
+        msg.acceleration = enu_to_ned(x, y, z)
+        msg.timestamp = self.__px4_timestamp_now()
+        self._trajectory_setpoint_pub.publish(msg)
 
     def __heartbeat_timer_cb(self) -> None:
         self.__publish_offboard_control_mode()
