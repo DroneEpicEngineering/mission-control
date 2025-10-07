@@ -22,6 +22,8 @@ setup(
         ],
     },
     entry_points={
-        "console_scripts": [],
+        "console_scripts": [
+            f"offboard_control = {package_name}.offboard_control_node:main"
+        ],
     },
 )
