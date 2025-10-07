@@ -1,0 +1,29 @@
+{
+    "name": "mission-control",
+    "image": "ghcr.io/droneepicengineering/mission-control:latest",
+    "remoteUser": "dee",
+    "runArgs": [
+        "--network=host",
+        "--ipc=host",
+        "--volume=/tmp/.X11-unix:/tmp/.X11-unix",
+        "--device=/dev/dri",
+        "--privileged"
+    ],
+    "workspaceMount": "source=${localWorkspaceFolder}/,target=/home/dee/ws/src/mission-control,type=bind,consistency=cached",
+    "workspaceFolder": "/home/dee/ws/src/mission-control",
+    "containerEnv": {
+        "DISPLAY": "${localEnv:DISPLAY}",
+        "ROS_DOMAIN_ID": "0"
+    },
+    "customizations": {
+        "vscode": {
+            "extensions": [
+                "charliermarsh.ruff",
+                "redhat.vscode-xml",
+                "ms-python.vscode-python-envs",
+                "ms-python.debugpy",
+                "ms-python.python"
+            ]
+        }
+    }
+}
