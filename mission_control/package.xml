@@ -1,0 +1,19 @@
+<?xml version="1.0"?>
+<?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
+<package format="3">
+  <name>mission_control</name>
+  <version>0.0.0</version>
+  <description>Flow control of the mission</description>
+  <maintainer email="k4aro0@gmail.com">dee</maintainer>
+  <license>MIT</license>
+
+  <depend>rclpy</depend>
+  <depend>py_trees</depend>
+  <depend>py_trees_ros</depend>
+
+  <depend>flight_control</depend>
+
+  <export>
+    <build_type>ament_python</build_type>
+  </export>
+</package>

@@ -1,11 +1,17 @@
 import rclpy
 from rclpy.node import Node
 
-from px4_msgs.msg import OffboardControlMode, VehicleCommand, TrajectorySetpoint
+from px4_msgs.msg import (
+    OffboardControlMode,
+    VehicleCommand,
+    TrajectorySetpoint,
+    VehicleStatus,
+    VehicleLocalPosition,
+)
 
 from utils.qos_profiles import PX4_PROFILE
 
-from flight_control.coordinate_transforms import enu_to_ned
+from flight_control.coordinate_transforms import enu_to_ned, ned_to_enu
 
 
 class SingletonMeta(type):
@@ -37,18 +43,59 @@ class OffboardControl(Node, metaclass=SingletonMeta):
             TrajectorySetpoint, "fmu/in/trajectory_setpoint", PX4_PROFILE
         )
 
+        self._vehicle_status: VehicleStatus = None
+        self._vehicle_local_position: VehicleLocalPosition = None
+
+        self._vehicle_status_sub = self.create_subscription(
+            VehicleStatus,
+            "fmu/out/vehicle_status",
+            self.__vehicle_status_cb,
+            PX4_PROFILE,
+        )
+        self._vehicle_local_position_sub = self.create_subscription(
+            VehicleLocalPosition,
+            "fmu/out/vehicle_local_position",
+            self.__vehicle_local_position_cb,
+            PX4_PROFILE,
+        )
+
     @property
     def is_ready(self) -> bool:
         return self._offboard_setpoint_counter > self.OFFBOARD_SETPOINT_THRESHOLD
 
+    @property
+    def is_in_offboard(self) -> bool:
+        if self._vehicle_status is None:
+            raise ValueError("Vehicle Status not initialized")
+
+        return self._vehicle_status.nav_state == VehicleStatus.NAVIGATION_STATE_OFFBOARD
+
+    @property
+    def is_armed(self) -> bool:
+        if self._vehicle_status is None:
+            raise ValueError("Vehicle Status not initialized")
+
+        return self._vehicle_status.arming_state == VehicleStatus.ARMING_STATE_ARMED
+
+    @property
+    def local_position(self) -> tuple[float, float, float]:
+        if self._vehicle_local_position is None:
+            raise ValueError("Vehicle Local Position not initialized")
+
+        return ned_to_enu(
+            self._vehicle_local_position.x,
+            self._vehicle_local_position.y,
+            self._vehicle_local_position.z,
+        )
+
     def arm(self) -> None:
         self.__publish_vehicle_command(
-            VehicleCommand.VEHICLE_CMD_COMPONENT_ARM_DISARM, 1.0
+            VehicleCommand.VEHICLE_CMD_COMPONENT_ARM_DISARM, param1=1.0
         )
 
     def disarm(self) -> None:
         self.__publish_vehicle_command(
-            VehicleCommand.VEHICLE_CMD_COMPONENT_ARM_DISARM, 0.0
+            VehicleCommand.VEHICLE_CMD_COMPONENT_ARM_DISARM, param1=0.0
         )
 
     def land(self) -> None:
@@ -88,6 +135,17 @@ class OffboardControl(Node, metaclass=SingletonMeta):
         msg.timestamp = self.__px4_timestamp_now()
         self._trajectory_setpoint_pub.publish(msg)
 
+    def is_position_reached(self, x: float, y: float, z: float, epsilon=0.1) -> None:
+        target_ned = enu_to_ned(x, y, z)
+        position = (
+            self._vehicle_local_position.x,
+            self._vehicle_local_position.y,
+            self._vehicle_local_position.z,
+        )
+        return all(
+            abs(pos - target) <= epsilon for pos, target in zip(position, target_ned)
+        )
+
     def __heartbeat_timer_cb(self) -> None:
         self.__publish_offboard_control_mode()
         if self._offboard_setpoint_counter <= self.OFFBOARD_SETPOINT_THRESHOLD:
@@ -104,16 +162,16 @@ class OffboardControl(Node, metaclass=SingletonMeta):
         msg.direct_actuator = False
         self._offboard_control_mode_pub.publish(msg)
 
-    def __publish_vehicle_command(self, command: int, **params) -> None:
+    def __publish_vehicle_command(self, command: int, **kwargs) -> None:
         msg = VehicleCommand()
         msg.command = command
-        msg.param1 = params["param1"] or 0
-        msg.param2 = params["param2"] or 0
-        msg.param3 = params["param3"] or 0
-        msg.param4 = params["param4"] or 0
-        msg.param5 = params["param5"] or 0
-        msg.param6 = params["param6"] or 0
-        msg.param7 = params["param7"] or 0
+        msg.param1 = kwargs.get("param1", 0.0)
+        msg.param2 = kwargs.get("param2", 0.0)
+        msg.param3 = kwargs.get("param3", 0.0)
+        msg.param4 = kwargs.get("param4", 0.0)
+        msg.param5 = kwargs.get("param5", 0.0)
+        msg.param6 = kwargs.get("param6", 0.0)
+        msg.param7 = kwargs.get("param7", 0.0)
         msg.target_system = 1
         msg.target_component = 1
         msg.source_system = 1
@@ -123,7 +181,13 @@ class OffboardControl(Node, metaclass=SingletonMeta):
         self._vehicle_command_pub.publish(msg)
 
     def __px4_timestamp_now(self) -> int:
-        return self.get_clock().now().nanoseconds / 1000
+        return int(self.get_clock().now().nanoseconds / 1000)
+
+    def __vehicle_status_cb(self, msg: VehicleStatus) -> None:
+        self._vehicle_status = msg
+
+    def __vehicle_local_position_cb(self, msg: VehicleLocalPosition) -> None:
+        self._vehicle_local_position = msg
 
 
 def main(args=None):

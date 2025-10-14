@@ -17,6 +17,13 @@ RUN sudo apt-get update && sudo apt-get -y --quiet --no-install-recommends insta
 
 RUN sudo pip3 install -U numpy
 
+RUN sudo apt-get update && sudo apt-get -y --quiet --no-install-recommends install \
+    ros-${ROS_DISTRO}-py-trees \
+    ros-${ROS_DISTRO}-py-trees-ros-interfaces \
+    ros-${ROS_DISTRO}-py-trees-ros \
+    ros-${ROS_DISTRO}-py-trees-ros-viewer \
+    && sudo rm -rf /var/lib/apt/lists/*
+
 WORKDIR ${ROS_WS}
 RUN source "/opt/ros/${ROS_DISTRO}/setup.bash" && \
     colcon build
