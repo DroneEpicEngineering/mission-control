@@ -46,6 +46,8 @@ jobs:
           tags: |
             ${{ env.REGISTRY }}/${{ env.OWNER_NAME }}/${{ env.BASE_IMAGE_NAME }}:latest
             ${{ env.REGISTRY }}/${{ env.OWNER_NAME }}/${{ env.BASE_IMAGE_NAME }}:${{ matrix.arch }}
+          cache-to: type=inline
+          cache-from: type=registry,ref=${{ env.REGISTRY }}/${{ env.OWNER_NAME }}/${{ env.BASE_IMAGE_NAME }}:latest
 
   manifest-base:
     runs-on: ubuntu-22.04
@@ -100,6 +102,8 @@ jobs:
           tags: |
             ${{ env.REGISTRY }}/${{ env.OWNER_NAME }}/${{ env.MISSION_CONTROL_IMAGE_NAME }}:latest
             ${{ env.REGISTRY }}/${{ env.OWNER_NAME }}/${{ env.MISSION_CONTROL_IMAGE_NAME }}:${{ matrix.arch }}
+          cache-to: type=inline
+          cache-from: type=registry,ref=${{ env.REGISTRY }}/${{ env.OWNER_NAME }}/${{ env.BASE_IMAGE_NAME }}:latest
 
   manifest-mission-control:
     runs-on: ubuntu-22.04
