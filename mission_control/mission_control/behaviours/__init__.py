@@ -4,6 +4,7 @@ from .height_check import HeightCheck
 from .offboard_action import OffboardAction
 from .offboard_check import OffboardCheck
 from .takeoff_action import TakeoffAction
+from .wait_for_connection import WaitForConnection
 
 __all__ = [
     "ArmAction",
@@ -12,4 +13,5 @@ __all__ = [
     "OffboardAction",
     "OffboardCheck",
     "TakeoffAction",
+    "WaitForConnection",
 ]

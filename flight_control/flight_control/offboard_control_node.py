@@ -65,14 +65,23 @@ class OffboardControl(Node, metaclass=SingletonMeta):
 
     @property
     def is_in_offboard(self) -> bool:
+        if self._vehicle_status is None:
+            raise ValueError("Vehicle Status not initialized")
+
         return self._vehicle_status.nav_state == VehicleStatus.NAVIGATION_STATE_OFFBOARD
 
     @property
     def is_armed(self) -> bool:
+        if self._vehicle_status is None:
+            raise ValueError("Vehicle Status not initialized")
+
         return self._vehicle_status.arming_state == VehicleStatus.ARMING_STATE_ARMED
 
     @property
     def local_position(self) -> tuple[float, float, float]:
+        if self._vehicle_local_position is None:
+            raise ValueError("Vehicle Local Position not initialized")
+
         return ned_to_enu(
             self._vehicle_local_position.x,
             self._vehicle_local_position.y,
@@ -81,12 +90,12 @@ class OffboardControl(Node, metaclass=SingletonMeta):
 
     def arm(self) -> None:
         self.__publish_vehicle_command(
-            VehicleCommand.VEHICLE_CMD_COMPONENT_ARM_DISARM, 1.0
+            VehicleCommand.VEHICLE_CMD_COMPONENT_ARM_DISARM, param1=1.0
         )
 
     def disarm(self) -> None:
         self.__publish_vehicle_command(
-            VehicleCommand.VEHICLE_CMD_COMPONENT_ARM_DISARM, 0.0
+            VehicleCommand.VEHICLE_CMD_COMPONENT_ARM_DISARM, param1=0.0
         )
 
     def land(self) -> None:
@@ -153,16 +162,16 @@ class OffboardControl(Node, metaclass=SingletonMeta):
         msg.direct_actuator = False
         self._offboard_control_mode_pub.publish(msg)
 
-    def __publish_vehicle_command(self, command: int, **params) -> None:
+    def __publish_vehicle_command(self, command: int, **kwargs) -> None:
         msg = VehicleCommand()
         msg.command = command
-        msg.param1 = params["param1"] or 0
-        msg.param2 = params["param2"] or 0
-        msg.param3 = params["param3"] or 0
-        msg.param4 = params["param4"] or 0
-        msg.param5 = params["param5"] or 0
-        msg.param6 = params["param6"] or 0
-        msg.param7 = params["param7"] or 0
+        msg.param1 = kwargs.get("param1", 0.0)
+        msg.param2 = kwargs.get("param2", 0.0)
+        msg.param3 = kwargs.get("param3", 0.0)
+        msg.param4 = kwargs.get("param4", 0.0)
+        msg.param5 = kwargs.get("param5", 0.0)
+        msg.param6 = kwargs.get("param6", 0.0)
+        msg.param7 = kwargs.get("param7", 0.0)
         msg.target_system = 1
         msg.target_component = 1
         msg.source_system = 1
@@ -172,7 +181,7 @@ class OffboardControl(Node, metaclass=SingletonMeta):
         self._vehicle_command_pub.publish(msg)
 
     def __px4_timestamp_now(self) -> int:
-        return self.get_clock().now().nanoseconds / 1000
+        return int(self.get_clock().now().nanoseconds / 1000)
 
     def __vehicle_status_cb(self, msg: VehicleStatus) -> None:
         self._vehicle_status = msg

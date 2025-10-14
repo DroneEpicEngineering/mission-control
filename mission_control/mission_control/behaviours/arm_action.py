@@ -11,7 +11,7 @@ class ArmAction(Behaviour):
         self._command_sent = False
         self._offboard_control: OffboardControl = None
     
-    def setup(self) -> None:
+    def setup(self, **kwargs) -> None:
         self._offboard_control = OffboardControl()
 
     def update(self) -> Status:

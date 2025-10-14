@@ -10,7 +10,7 @@ class ArmCheck(Behaviour):
         super().__init__(name)
         self._offboard_control: OffboardControl = None
     
-    def setup(self) -> None:
+    def setup(self, **kwargs) -> None:
         self._offboard_control = OffboardControl()
     
     def update(self) -> Status:

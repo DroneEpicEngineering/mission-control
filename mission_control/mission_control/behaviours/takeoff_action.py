@@ -12,19 +12,18 @@ class TakeoffAction(Behaviour):
         self._position_xy = (0.0, 0.0)
         self._command_sent = False
 
-    def setup(self) -> None:
+    def setup(self, **kwargs) -> None:
         self._offboard_control = OffboardControl()
 
     def initialise(self) -> None:
-        self._position_xy[0], self._position_xy[1], _ = (
-            self._offboard_control.local_position
-        )
+        x, y, _ = self._offboard_control.local_position
+        self._position_xy = (x, y)
 
     def update(self) -> Status:
-        if not self._command_sent:
-            self._offboard_control.fly_point(
-                self._position_xy[0], self._position_xy[1], self._target_height
-            )
-            self._command_sent = True
+        # if not self._command_sent:
+        self._offboard_control.fly_point(
+            self._position_xy[0], self._position_xy[1], self._target_height
+        )
+            # self._command_sent = True
 
         return Status.RUNNING

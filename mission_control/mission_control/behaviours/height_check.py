@@ -11,13 +11,14 @@ class HeightCheck(Behaviour):
         self._offboard_control: OffboardControl = None
         self._position_xy: tuple[float, float] = (0.0, 0.0)
 
-    def setup(self) -> None:
+    def setup(self, **kwargs) -> None:
         self._offboard_control = OffboardControl()
 
     def initialise(self) -> None:
-        self._position_xy[0], self._position_xy[1], _ = (
+        x, y, _ = (
             self._offboard_control.local_position
         )
+        self._position_xy = (x, y)
 
     def update(self) -> Status:
         if self._offboard_control.is_position_reached(

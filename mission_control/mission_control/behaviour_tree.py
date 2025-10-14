@@ -1,16 +1,20 @@
 import rclpy
-from rclpy.executors import ExternalShutdownException
+from rclpy.executors import ExternalShutdownException, MultiThreadedExecutor
 
 from py_trees.composites import Selector, Sequence, Composite
 
 from py_trees_ros.trees import BehaviourTree
 from py_trees_ros.exceptions import TimedOutError
 
+from flight_control.offboard_control_node import OffboardControl
+
 from mission_control import behaviours
 
 
 def create_behaviour_tree() -> Composite:
     startup = Sequence("startup", memory=False)
+
+    establish_connection = behaviours.WaitForConnection("estabblish_connection")
 
     ensure_offboard = Selector("ensure_offboard", memory=False)
 
@@ -26,6 +30,8 @@ def create_behaviour_tree() -> Composite:
 
     is_height_reached = behaviours.HeightCheck("is_height_reached")
     do_takeoff = behaviours.TakeoffAction("do_takeoff")
+
+    startup.add_child(establish_connection)
 
     startup.add_child(ensure_offboard)
     ensure_offboard.add_child(is_in_offboard)
@@ -43,23 +49,29 @@ def create_behaviour_tree() -> Composite:
 
 
 def main(args=None):
-    rclpy.init(args)
+    rclpy.init()
     root = create_behaviour_tree()
     tree = BehaviourTree(root=root)
+    offboard_control = OffboardControl()
     try:
         tree.setup(timeot=15.0)
-    except TimedOutError | KeyboardInterrupt:
+    except (TimedOutError, KeyboardInterrupt):
         tree.shutdown()
         rclpy.try_shutdown()
+
+    executor = MultiThreadedExecutor()
+    executor.add_node(offboard_control)
+    executor.add_node(tree.node)
 
     tree.tick_tock(period_ms=10.0)
 
     try:
-        rclpy.spin(tree.node)
-    except KeyboardInterrupt | ExternalShutdownException:
+        executor.spin()
+    except (KeyboardInterrupt, ExternalShutdownException):
         pass
     finally:
         tree.shutdown()
+        offboard_control.destroy_node()
         rclpy.try_shutdown()
 
 
