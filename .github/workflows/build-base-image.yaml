@@ -92,6 +92,16 @@ jobs:
           registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Set image tags
+        id: vars
+        run: |
+          if [[ "${{ github.event_name }}" == "pull_request" ]]; then
+            BRANCH_NAME="${{ github.head_ref }}"
+            SAFE_BRANCH=$(echo "$BRANCH_NAME" | tr '/' '-' | tr '[:upper:]' '[:lower:]')
+            echo "TAG=$SAFE_BRANCH" >> $GITHUB_OUTPUT
+          else
+            echo "TAG=latest" >> $GITHUB_OUTPUT
+          fi
       - name: Build and push mission-control image (${{ matrix.platform }})
         uses: docker/build-push-action@v5
         with:
@@ -100,10 +110,10 @@ jobs:
           push: true
           platforms: ${{ matrix.platform }}
           tags: |
-            ${{ env.REGISTRY }}/${{ env.OWNER_NAME }}/${{ env.MISSION_CONTROL_IMAGE_NAME }}:latest
-            ${{ env.REGISTRY }}/${{ env.OWNER_NAME }}/${{ env.MISSION_CONTROL_IMAGE_NAME }}:${{ matrix.arch }}
+            ${{ env.REGISTRY }}/${{ env.OWNER_NAME }}/${{ env.MISSION_CONTROL_IMAGE_NAME }}:${{ steps.vars.outputs.TAG }}
+            ${{ env.REGISTRY }}/${{ env.OWNER_NAME }}/${{ env.MISSION_CONTROL_IMAGE_NAME }}:${{ matrix.arch }}-${{ steps.vars.outputs.TAG }}
           cache-to: type=inline
-          cache-from: type=registry,ref=${{ env.REGISTRY }}/${{ env.OWNER_NAME }}/${{ env.BASE_IMAGE_NAME }}:latest
+          cache-from: type=registry,ref=${{ env.REGISTRY }}/${{ env.OWNER_NAME }}/${{ env.BASE_IMAGE_NAME }}:${{ steps.vars.outputs.TAG }}
 
   manifest-mission-control:
     runs-on: ubuntu-22.04
@@ -117,9 +127,19 @@ jobs:
           registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Set image tags
+        id: vars
+        run: |
+          if [[ "${{ github.event_name }}" == "pull_request" ]]; then
+            BRANCH_NAME="${{ github.head_ref }}"
+            SAFE_BRANCH=$(echo "$BRANCH_NAME" | tr '/' '-' | tr '[:upper:]' '[:lower:]')
+            echo "TAG=$SAFE_BRANCH" >> $GITHUB_OUTPUT
+          else
+            echo "TAG=latest" >> $GITHUB_OUTPUT
+          fi
       - name: Create and push multi-arch manifest for mission-control
         run: |
           docker buildx imagetools create \
-            -t ${{ env.REGISTRY }}/${{ env.OWNER_NAME }}/${{ env.MISSION_CONTROL_IMAGE_NAME }}:latest \
-            ${{ env.REGISTRY }}/${{ env.OWNER_NAME }}/${{ env.MISSION_CONTROL_IMAGE_NAME }}:amd64 \
-            ${{ env.REGISTRY }}/${{ env.OWNER_NAME }}/${{ env.MISSION_CONTROL_IMAGE_NAME }}:arm64
+            -t ${{ env.REGISTRY }}/${{ env.OWNER_NAME }}/${{ env.MISSION_CONTROL_IMAGE_NAME }}:${{ steps.vars.outputs.TAG }} \
+            ${{ env.REGISTRY }}/${{ env.OWNER_NAME }}/${{ env.MISSION_CONTROL_IMAGE_NAME }}:amd64-${{ steps.vars.outputs.TAG }} \
+            ${{ env.REGISTRY }}/${{ env.OWNER_NAME }}/${{ env.MISSION_CONTROL_IMAGE_NAME }}:arm64-${{ steps.vars.outputs.TAG }}
