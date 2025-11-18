@@ -24,12 +24,10 @@ RUN sudo apt-get update && sudo apt-get -y --quiet --no-install-recommends insta
     ros-${ROS_DISTRO}-py-trees-ros-viewer \
     && sudo rm -rf /var/lib/apt/lists/*
 
-RUN git clone "https://github.com/eProsima/Micro-XRCE-DDS-Agent.git" --branch v2.4.2 && \
-    git clone "https://github.com/PX4/px4_msgs.git" --branch "release/1.15"
-
 WORKDIR ${ROS_WS}
 RUN sudo rosdep update && \
     sudo rosdep install --from-paths ${ROS_WORKSPACE} -r -y --ignore-src
+
 RUN source "/opt/ros/${ROS_DISTRO}/setup.bash" && \
     colcon build
 
