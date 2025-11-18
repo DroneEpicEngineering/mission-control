@@ -6,7 +6,7 @@
         {
             "label": "build with colcon",
             "type": "shell",
-            "command": "cd ~/ws && colcon build --symlink-install --packages-skip px4_msgs microxrcedds_agent",
+            "command": "/home/dee/ws/src/mission-control/scripts/build.bash",
             "group": {
                 "kind": "build",
                 "isDefault": true
