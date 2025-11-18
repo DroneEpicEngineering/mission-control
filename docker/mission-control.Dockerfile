@@ -25,6 +25,8 @@ RUN sudo apt-get update && sudo apt-get -y --quiet --no-install-recommends insta
     && sudo rm -rf /var/lib/apt/lists/*
 
 WORKDIR ${ROS_WS}
+RUN rosdep update && \
+    rosdep install --from-paths ${ROS_WORKSPACE} -r -y --ignore-src
 RUN source "/opt/ros/${ROS_DISTRO}/setup.bash" && \
     colcon build
 
