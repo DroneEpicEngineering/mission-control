@@ -15,7 +15,7 @@ RUN sudo apt-get update && sudo apt-get -y --quiet --no-install-recommends insta
     ros-${ROS_DISTRO}-rviz2 \
     && sudo rm -rf /var/lib/apt/lists/*
 
-RUN sudo pip3 install -U numpy
+RUN sudo pip3 install -U "numpy==2.0.2" "matplotlib==3.10.0" "pandas==2.2.2"
 
 RUN sudo apt-get update && sudo apt-get -y --quiet --no-install-recommends install \
     ros-${ROS_DISTRO}-py-trees \
