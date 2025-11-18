@@ -33,10 +33,10 @@ COPY . mission-control
 
 WORKDIR ${ROS_WS}
 RUN source "/opt/ros/${ROS_DISTRO}/setup.bash" && \
-    "${ROS_WORKSPACE}/src/mission-control/scripts/build.bash"
+    "${ROS_WS}/src/mission-control/scripts/build.bash"
 
 RUN echo "source \"/opt/ros/${ROS_DISTRO}/setup.bash\"" >> "/home/${USERNAME}/.bashrc" && \
     echo "source \"${ROS_WS}/install/setup.bash\"" >> "/home/${USERNAME}/.bashrc" && \
-    echo "source \"${ROS_WORKSPACE}/src/mission-control/install/setup.bash\"" >> "/home/${USERNAME}/.bashrc"
+    echo "source \"${ROS_WS}/src/mission-control/install/setup.bash\"" >> "/home/${USERNAME}/.bashrc"
 
 CMD ["/bin/bash"]
