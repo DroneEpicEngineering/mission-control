@@ -5,8 +5,10 @@ from py_trees.composites import Selector, Sequence, Composite
 
 from py_trees_ros.trees import BehaviourTree
 from py_trees_ros.exceptions import TimedOutError
+from py_trees_ros.subscribers import ToBlackboard
 
 from flight_control.offboard_control_node import OffboardControl
+from system_interfaces.action._follow_trajectory import FollowTrajectory_FeedbackMessage
 
 from mission_control import behaviours
 
@@ -31,6 +33,14 @@ def create_behaviour_tree() -> Composite:
     is_height_reached = behaviours.HeightCheck("is_height_reached")
     do_takeoff = behaviours.TakeoffAction("do_takeoff")
 
+    gather_target_data = ToBlackboard(
+        "gather_target_data",
+        "/follow_trajectory/_action/feedback",
+        topic_type=FollowTrajectory_FeedbackMessage,
+        qos_profile=10,
+        blackboard_variables={"target": "feedback"},
+    )
+
     startup.add_child(establish_connection)
 
     startup.add_child(ensure_offboard)
@@ -44,6 +54,8 @@ def create_behaviour_tree() -> Composite:
     startup.add_child(takeoff)
     takeoff.add_child(is_height_reached)
     takeoff.add_child(do_takeoff)
+
+    startup.add_child(gather_target_data)
 
     return startup
 
