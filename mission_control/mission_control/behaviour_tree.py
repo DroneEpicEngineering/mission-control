@@ -8,12 +8,47 @@ from py_trees_ros.exceptions import TimedOutError
 from py_trees_ros.subscribers import ToBlackboard
 
 from flight_control.offboard_control_node import OffboardControl
+from flight_control.navigation import NavigationStrategy, algorithms as algs
 from system_interfaces.action._follow_trajectory import FollowTrajectory_FeedbackMessage
 
 from mission_control import behaviours
 
 
-def create_behaviour_tree() -> Composite:
+def parameters() -> dict:
+    param_reader = rclpy.create_node("config")
+    params = dict()
+
+    param_reader.declare_parameter("algorithm", "frpn")
+    param_reader.declare_parameter("N", 2.0)
+    param_reader.declare_parameter("Vd", 2.0)
+    param_reader.declare_parameter("G", 2.0)
+    param_reader.declare_parameter("W", 2.0)
+
+    params["algorithm"] = (
+        param_reader.get_parameter("algorithm").get_parameter_value().string_value
+    )
+    params["N"] = param_reader.get_parameter("N").get_parameter_value().double_value
+    params["Vd"] = param_reader.get_parameter("Vd").get_parameter_value().double_value
+    params["G"] = param_reader.get_parameter("G").get_parameter_value().double_value
+    params["W"] = param_reader.get_parameter("W").get_parameter_value().double_value
+
+    param_reader.destroy_node()
+    return params
+
+
+def strategy_setup(params: dict) -> NavigationStrategy:
+    match params["algorithm"]:
+        case "ppn":
+            return algs.ProportionalNavigation(**params)
+        case "tpn":
+            return algs.TrueProportionalNavigation(**params)
+        case "frpn":
+            return algs.FastResponseProportionalNavigation(**params)
+        case _:
+            return algs.ProportionalNavigation()
+
+
+def create_behaviour_tree(params) -> Composite:
     startup = Sequence("startup", memory=False)
 
     establish_connection = behaviours.WaitForConnection("estabblish_connection")
@@ -41,6 +76,10 @@ def create_behaviour_tree() -> Composite:
         blackboard_variables={"target": "feedback"},
     )
 
+    intercept_action = behaviours.InterceptAction(
+        "intercept", strategy=strategy_setup(params)
+    )
+
     startup.add_child(establish_connection)
 
     startup.add_child(ensure_offboard)
@@ -56,13 +95,14 @@ def create_behaviour_tree() -> Composite:
     takeoff.add_child(do_takeoff)
 
     startup.add_child(gather_target_data)
+    startup.add_child(intercept_action)
 
     return startup
 
 
 def main(args=None):
     rclpy.init()
-    root = create_behaviour_tree()
+    root = create_behaviour_tree(parameters())
     tree = BehaviourTree(root=root)
     offboard_control = OffboardControl()
     try:

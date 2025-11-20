@@ -5,6 +5,7 @@ from .offboard_action import OffboardAction
 from .offboard_check import OffboardCheck
 from .takeoff_action import TakeoffAction
 from .wait_for_connection import WaitForConnection
+from .intercept_action import InterceptAction
 
 __all__ = [
     "ArmAction",
@@ -14,4 +15,5 @@ __all__ = [
     "OffboardCheck",
     "TakeoffAction",
     "WaitForConnection",
+    "InterceptAction"
 ]
