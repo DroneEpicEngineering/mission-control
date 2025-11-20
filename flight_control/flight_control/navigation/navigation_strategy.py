@@ -1,10 +1,18 @@
 from abc import ABC, abstractmethod
-from navigation.types import NavigationState, NavigationInput, NavigationOutput
+
+from flight_control.navigation.types import (
+    NavigationInput,
+    NavigationOutput,
+)
 
 
-class NagivationStrategy(ABC):
-    def __init__(self) -> None:
-        self._state = NavigationState()
+class NavigationStrategy(ABC):
+    @property
+    def is_ready(self) -> bool:
+        return self._state is not None
+
+    @abstractmethod
+    def setup(self, data: NavigationInput) -> None:
         pass
 
     @abstractmethod

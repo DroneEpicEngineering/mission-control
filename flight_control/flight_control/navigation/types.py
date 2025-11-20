@@ -10,9 +10,6 @@ class NavigationInput:
     x: float
     y: float
     z: float
-    vx: float
-    vy: float
-    vz: float
     psi: float
 
     dt: float
@@ -24,3 +21,9 @@ class NavigationOutput:
     y: float
     z: float
     psi: float
+
+
+@dataclass
+class NavigationState:
+    los: float
+    R: float

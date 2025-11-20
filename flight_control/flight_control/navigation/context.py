@@ -1,8 +1,8 @@
-from navigation.types import NavigationInput, NavigationOutput
-from navigation.navigation_strategy import NavigationStrategy
+from flight_control.navigation.types import NavigationInput, NavigationOutput
+from flight_control.navigation.navigation_strategy import NavigationStrategy
 
 
-class NavigationContex:
+class NavigationContext:
     def __init__(self, strategy: NavigationStrategy) -> None:
         self._strategy = strategy
 
@@ -10,10 +10,12 @@ class NavigationContex:
     def strategy(self) -> NavigationStrategy:
         return self._strategy
 
-    @property.setter
+    @strategy.setter
     def strategy(self, strategy: NavigationStrategy) -> None:
         self._strategy = strategy
 
     def execute(self, data: NavigationInput) -> NavigationOutput:
-        result = self._strategy.execute(data)
-        return result
+        if not self._strategy.is_ready:
+            self._strategy.setup(data)
+
+        return self._strategy.execute(data)

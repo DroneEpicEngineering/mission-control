@@ -20,10 +20,8 @@ class TakeoffAction(Behaviour):
         self._position_xy = (x, y)
 
     def update(self) -> Status:
-        # if not self._command_sent:
         self._offboard_control.fly_point(
             self._position_xy[0], self._position_xy[1], self._target_height
         )
-            # self._command_sent = True
 
         return Status.RUNNING

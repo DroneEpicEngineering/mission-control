@@ -7,14 +7,14 @@ from flight_control.navigation.types import (
 )
 from flight_control.navigation import NavigationStrategy
 from flight_control.navigation.calculations import (
-    calculate_distance,
-    calculate_approach_velocity,
     calculate_los,
     calculate_los_change,
+    calculate_distance,
+    calculate_approach_velocity,
 )
 
 
-class ProportionalNavigation(NavigationStrategy):
+class TrueProportionalNavigation(NavigationStrategy):
     def __init__(self, **kwargs) -> None:
         super().__init__()
         self._state: NavigationState = None
@@ -35,12 +35,19 @@ class ProportionalNavigation(NavigationStrategy):
 
         a_n = self._N * Vc * d_los
 
-        psi = data.psi + (a_n / self._Vd) * data.dt
-        psi = np.arctan2(np.sin(psi), np.cos(psi))
+        n_los_x = -np.sin(los)
+        n_los_y = np.cos(los)
 
-        x = data.x + self._Vd * np.cos(psi) * data.dt
-        y = data.y + self._Vd * np.sin(psi) * data.dt
+        ax = a_n * n_los_x
+        ay = a_n * n_los_y
+
+        vx = self._Vd * np.cos(data.psi) + ax * data.dt
+        vy = self._Vd * np.sin(data.psi) + ay * data.dt
+
+        x = data.x + vx * data.dt
+        y = data.y + vy * data.dt
         z = data.z
+        psi = np.arctan2(vy, vx)
 
         self._state.los = calculate_los(data)
         self._state.R = calculate_distance(data)
