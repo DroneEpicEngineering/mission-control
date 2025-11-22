@@ -134,7 +134,7 @@ class OffboardControl(Node, metaclass=SingletonMeta):
 
     def fly_velocity(self, x: float, y: float, z: float, yaw: float = None) -> None:
         msg = TrajectorySetpoint()
-        msg.position = None
+        msg.position = [float("nan"), float("nan"), float("nan")]
         msg.velocity = enu_to_ned(x, y, z)
         msg.yaw = heading_transform(yaw if yaw is not None else self.heading)
         msg.timestamp = self.__px4_timestamp_now()
@@ -142,8 +142,8 @@ class OffboardControl(Node, metaclass=SingletonMeta):
 
     def fly_acceleration(self, x: float, y: float, z: float, yaw: float = None) -> None:
         msg = TrajectorySetpoint()
-        msg.position = None
-        msg.velocity = None
+        msg.position = [float("nan"), float("nan"), float("nan")]
+        msg.velocity = [float("nan"), float("nan"), float("nan")]
         msg.acceleration = enu_to_ned(x, y, z)
         msg.yaw = heading_transform(yaw if yaw is not None else self.heading)
         msg.timestamp = self.__px4_timestamp_now()
