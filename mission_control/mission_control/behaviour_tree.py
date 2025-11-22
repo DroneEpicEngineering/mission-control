@@ -1,11 +1,15 @@
 import rclpy
+from rclpy.node import Node
 from rclpy.executors import ExternalShutdownException, MultiThreadedExecutor
 
 from py_trees.composites import Selector, Sequence, Composite
+from py_trees.common import ClearingPolicy
 
 from py_trees_ros.trees import BehaviourTree
 from py_trees_ros.exceptions import TimedOutError
-from py_trees_ros.subscribers import ToBlackboard
+from py_trees_ros.subscribers import ToBlackboard, WaitForData
+
+from std_msgs.msg import Empty
 
 from flight_control.offboard_control_node import OffboardControl
 from flight_control.navigation import NavigationStrategy, algorithms as algs
@@ -18,11 +22,11 @@ def parameters() -> dict:
     param_reader = rclpy.create_node("config")
     params = dict()
 
-    param_reader.declare_parameter("algorithm", "frpn")
-    param_reader.declare_parameter("N", 2.0)
-    param_reader.declare_parameter("Vd", 2.0)
-    param_reader.declare_parameter("G", 2.0)
-    param_reader.declare_parameter("W", 2.0)
+    param_reader.declare_parameter("algorithm", value="frpn")
+    param_reader.declare_parameter("N", value=2.0)
+    param_reader.declare_parameter("Vd", value=2.0)
+    param_reader.declare_parameter("G", value=2.0)
+    param_reader.declare_parameter("W", value=2.0)
 
     params["algorithm"] = (
         param_reader.get_parameter("algorithm").get_parameter_value().string_value
@@ -31,6 +35,10 @@ def parameters() -> dict:
     params["Vd"] = param_reader.get_parameter("Vd").get_parameter_value().double_value
     params["G"] = param_reader.get_parameter("G").get_parameter_value().double_value
     params["W"] = param_reader.get_parameter("W").get_parameter_value().double_value
+
+    param_reader.get_logger().info(
+        f"starting the system with following parameters:\n{params}"
+    )
 
     param_reader.destroy_node()
     return params
@@ -51,7 +59,11 @@ def strategy_setup(params: dict) -> NavigationStrategy:
 def create_behaviour_tree(params) -> Composite:
     startup = Sequence("startup", memory=False)
 
-    establish_connection = behaviours.WaitForConnection("estabblish_connection")
+    establish_connection = behaviours.WaitForConnection("establish_connection")
+    get_in_the_air = Selector("get_in_the_air", memory=False)
+
+    is_in_air = behaviours.HeightCheck("is_in_air")
+    takeoff = Sequence("takeoff", memory=False)
 
     ensure_offboard = Selector("ensure_offboard", memory=False)
 
@@ -63,14 +75,27 @@ def create_behaviour_tree(params) -> Composite:
     is_armed = behaviours.ArmCheck("is_armed")
     do_arm = behaviours.ArmAction("do_arm")
 
-    takeoff = Selector("takeoff", memory=False)
+    gain_altitude = Selector("gain_altitude", memory=False)
 
     is_height_reached = behaviours.HeightCheck("is_height_reached")
-    do_takeoff = behaviours.TakeoffAction("do_takeoff")
+    fly_up = behaviours.TakeoffAction("fly_up")
+
+    system = Selector("system", memory=False)
+
+    # is_mission_finished
+    mission = Sequence("mission", memory=False)
+
+    wait_for_start = WaitForData(
+        "start_command",
+        topic_name="start",
+        topic_type=Empty,
+        qos_profile=1,
+        clearing_policy=ClearingPolicy.NEVER,
+    )
 
     gather_target_data = ToBlackboard(
         "gather_target_data",
-        "/follow_trajectory/_action/feedback",
+        topic_name="/follow_trajectory/_action/feedback",
         topic_type=FollowTrajectory_FeedbackMessage,
         qos_profile=10,
         blackboard_variables={"target": "feedback"},
@@ -81,28 +106,39 @@ def create_behaviour_tree(params) -> Composite:
     )
 
     startup.add_child(establish_connection)
+    startup.add_child(get_in_the_air)
 
-    startup.add_child(ensure_offboard)
+    get_in_the_air.add_child(is_in_air)
+    get_in_the_air.add_child(takeoff)
+
+    takeoff.add_child(ensure_offboard)
     ensure_offboard.add_child(is_in_offboard)
     ensure_offboard.add_child(set_offboard_mode)
 
-    startup.add_child(ensure_arm)
+    takeoff.add_child(ensure_arm)
     ensure_arm.add_child(is_armed)
     ensure_arm.add_child(do_arm)
 
-    startup.add_child(takeoff)
-    takeoff.add_child(is_height_reached)
-    takeoff.add_child(do_takeoff)
+    takeoff.add_child(gain_altitude)
+    gain_altitude.add_child(is_height_reached)
+    gain_altitude.add_child(fly_up)
 
-    startup.add_child(gather_target_data)
-    startup.add_child(intercept_action)
+    startup.add_child(system)
+
+    # system.add_child(is_mission_finished)
+    system.add_child(mission)
+
+    mission.add_child(wait_for_start)
+    mission.add_child(gather_target_data)
+    mission.add_child(intercept_action)
 
     return startup
 
 
 def main(args=None):
     rclpy.init()
-    root = create_behaviour_tree(parameters())
+    params = parameters()
+    root = create_behaviour_tree(params)
     tree = BehaviourTree(root=root)
     offboard_control = OffboardControl()
     try:
