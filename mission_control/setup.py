@@ -13,6 +13,7 @@ setup(
         ("share/" + package_name, ["package.xml"]),
         (os.path.join("share", package_name, "launch"), glob("launch/*.launch.py")),
         (os.path.join("share", package_name, "params"), glob("params/*.yaml")),
+        (os.path.join("share", package_name, "config"), glob("config/*.*")),
     ],
     install_requires=["setuptools"],
     zip_safe=True,
@@ -26,6 +27,9 @@ setup(
         ],
     },
     entry_points={
-        "console_scripts": [f"behaviour_tree = {package_name}.behaviour_tree:main"],
+        "console_scripts": [
+            f"behaviour_tree = {package_name}.behaviour_tree:main",
+            f"visualizer = {package_name}.visualizer:main",
+        ],
     },
 )
