@@ -15,8 +15,8 @@ from flight_control.navigation.calculations import (
 
 
 class ProportionalNavigation(NavigationStrategy):
-    def __init__(self, **kwargs) -> None:
-        super().__init__()
+    def __init__(self, a_max=1.0, **kwargs) -> None:
+        super().__init__(a_max)
         self._state: NavigationState = None
         self._N = kwargs.get("N", 4)
         self._Vd = kwargs.get("Vd", 2)
@@ -33,16 +33,15 @@ class ProportionalNavigation(NavigationStrategy):
         R = calculate_distance(data)
         Vc = calculate_approach_velocity(R, self._state.R, data.dt)
 
-        a_n = self._N * Vc * d_los
+        p_t = np.array([data.target_x, data.target_y, data.target_z])
+        p_d = np.array([data.x, data.y, data.z])
+        dp = p_t - p_d
+
+        a_dir = dp / np.linalg.norm(dp)
+        a_n = self._N * Vc * d_los * a_dir
+        result = np.clip(a_n, -self._a_max, self._a_max)
 
         psi = data.psi + (a_n / self._Vd) * data.dt
         psi = np.arctan2(np.sin(psi), np.cos(psi))
 
-        x = data.x + self._Vd * np.cos(psi) * data.dt
-        y = data.y + self._Vd * np.sin(psi) * data.dt
-        z = data.z
-
-        self._state.los = calculate_los(data)
-        self._state.R = calculate_distance(data)
-
-        return NavigationOutput(x=x, y=y, z=z, psi=psi)
+        return NavigationOutput(ax=result[0], ay=result[1], az=result[2], psi=psi)

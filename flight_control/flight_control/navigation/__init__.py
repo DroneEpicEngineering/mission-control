@@ -1,4 +1,4 @@
-from flight_control.navigation.navigation_strategy import NavigationStrategy
+from flight_control.navigation.strategy import NavigationStrategy
 from flight_control.navigation.context import NavigationContext
 from flight_control.navigation import algorithms
 from flight_control.navigation import types

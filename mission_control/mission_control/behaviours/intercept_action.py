@@ -1,3 +1,5 @@
+import time
+
 import numpy as np
 
 from py_trees.behaviour import Behaviour
@@ -16,6 +18,7 @@ class InterceptAction(Behaviour):
         self._strategy = strategy
         self._blackboard = self.attach_blackboard_client("intercept_action")
         self._blackboard.register_key("target", access=Access.READ)
+        self._prev_time = time.perf_counter()
 
     def setup(self, **kwargs) -> None:
         self._offboard_control = OffboardControl()
@@ -25,13 +28,7 @@ class InterceptAction(Behaviour):
         target_data = self._blackboard.get("target")
         local_position = np.array(self._offboard_control.local_position)
 
-        # if self._offboard_control.is_position_reached(
-        #     target_data.pose.position.x,
-        #     target_data.pose.position.y,
-        #     target_data.pose.position.z,
-        #     epsilon=1.0,
-        # ):
-        #     return Status.SUCCESS
+        now = time.perf_counter()
 
         data = NavigationInput(
             target_x=target_data.pose.position.x,
@@ -41,29 +38,19 @@ class InterceptAction(Behaviour):
             y=local_position[1],
             z=local_position[2],
             psi=self._offboard_control.heading,
-            dt=0.01,
+            dt=now - self._prev_time,
         )
         result = self._context.execute(data)
 
-        self._offboard_control.fly_point(
-            result.x,
-            result.y,
-            result.z,
-            result.psi,
-        )
-
         self._offboard_control.get_logger().warn(f"\n{data}\n{result}\n")
 
-        # next_position = np.array([result.x, result.y, result.z])
-        # step_vector = (next_position - local_position) / np.norm(
-        #     next_position - local_position
-        # )
+        self._offboard_control.fly_acceleration(
+            result.ax,
+            result.ay,
+            result.az,
+            yaw=result.psi,
+        )
 
-        # self._offboard_control.fly_velocity(
-        #     step_vector[0],
-        #     step_vector[1],
-        #     step_vector[2],
-        #     result.psi,
-        # )
+        self._prev_time = time.perf_counter()
 
         return Status.RUNNING

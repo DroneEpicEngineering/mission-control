@@ -15,8 +15,8 @@ from flight_control.navigation.calculations import (
 
 
 class TrueProportionalNavigation(NavigationStrategy):
-    def __init__(self, **kwargs) -> None:
-        super().__init__()
+    def __init__(self, a_max=1.0, **kwargs) -> None:
+        super().__init__(a_max)
         self._state: NavigationState = None
         self._N = kwargs.get("N", 4)
         self._Vd = kwargs.get("Vd", 2)
@@ -41,15 +41,12 @@ class TrueProportionalNavigation(NavigationStrategy):
         ax = a_n * n_los_x
         ay = a_n * n_los_y
 
-        vx = self._Vd * np.cos(data.psi) + ax * data.dt
-        vy = self._Vd * np.sin(data.psi) + ay * data.dt
+        p_t = np.array([data.target_x, data.target_y, data.target_z])
+        p_d = np.array([data.x, data.y, data.z])
+        dp = p_t - p_d
 
-        x = data.x + vx * data.dt
-        y = data.y + vy * data.dt
-        z = data.z
-        psi = np.arctan2(vy, vx)
+        a_dir = dp / np.linalg.norm(dp)
+        a_cmd = np.array([ax * a_dir[0], ay * a_dir[1], 1 * a_dir[2]])
+        result = np.clip(a_cmd, -self._a_max, self._a_max)
 
-        self._state.los = calculate_los(data)
-        self._state.R = calculate_distance(data)
-
-        return NavigationOutput(x=x, y=y, z=z, psi=psi)
+        return NavigationOutput(ax=result[0], ay=result[1], az=result[2], psi=data.psi)

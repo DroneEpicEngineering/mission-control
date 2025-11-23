@@ -1,5 +1,5 @@
 from flight_control.navigation.types import NavigationInput, NavigationOutput
-from flight_control.navigation.navigation_strategy import NavigationStrategy
+from flight_control.navigation.strategy import NavigationStrategy
 
 
 class NavigationContext:

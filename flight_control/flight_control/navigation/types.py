@@ -17,11 +17,10 @@ class NavigationInput:
 
 @dataclass
 class NavigationOutput:
-    x: float
-    y: float
-    z: float
+    ax: float
+    ay: float
+    az: float
     psi: float
-
 
 @dataclass
 class NavigationState:

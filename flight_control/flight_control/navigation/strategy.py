@@ -7,6 +7,9 @@ from flight_control.navigation.types import (
 
 
 class NavigationStrategy(ABC):
+    def __init__(self, a_max=1.0) -> None:
+        self._a_max = a_max
+
     @property
     def is_ready(self) -> bool:
         return self._state is not None

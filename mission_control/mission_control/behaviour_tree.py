@@ -1,5 +1,4 @@
 import rclpy
-from rclpy.node import Node
 from rclpy.executors import ExternalShutdownException, MultiThreadedExecutor
 
 from py_trees.composites import Selector, Sequence, Composite
@@ -23,6 +22,7 @@ def parameters() -> dict:
     params = dict()
 
     param_reader.declare_parameter("algorithm", value="frpn")
+    param_reader.declare_parameter("a_max", value=5.0)
     param_reader.declare_parameter("N", value=2.0)
     param_reader.declare_parameter("Vd", value=2.0)
     param_reader.declare_parameter("G", value=2.0)
@@ -31,6 +31,7 @@ def parameters() -> dict:
     params["algorithm"] = (
         param_reader.get_parameter("algorithm").get_parameter_value().string_value
     )
+    params["a_max"] = param_reader.get_parameter("a_max").get_parameter_value().double_value
     params["N"] = param_reader.get_parameter("N").get_parameter_value().double_value
     params["Vd"] = param_reader.get_parameter("Vd").get_parameter_value().double_value
     params["G"] = param_reader.get_parameter("G").get_parameter_value().double_value
@@ -57,7 +58,7 @@ def strategy_setup(params: dict) -> NavigationStrategy:
 
 
 def create_behaviour_tree(params) -> Composite:
-    startup = Sequence("startup", memory=False)
+    startup = Sequence("startup", memory=True)
 
     establish_connection = behaviours.WaitForConnection("establish_connection")
     get_in_the_air = Selector("get_in_the_air", memory=False)
