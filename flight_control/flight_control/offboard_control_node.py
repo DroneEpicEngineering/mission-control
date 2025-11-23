@@ -11,7 +11,11 @@ from px4_msgs.msg import (
 
 from utils.qos_profiles import PX4_PROFILE
 
-from flight_control.coordinate_transforms import enu_to_ned, ned_to_enu
+from flight_control.coordinate_transforms import (
+    enu_to_ned,
+    ned_to_enu,
+    heading_transform,
+)
 
 
 class SingletonMeta(type):
@@ -88,6 +92,13 @@ class OffboardControl(Node, metaclass=SingletonMeta):
             self._vehicle_local_position.z,
         )
 
+    @property
+    def heading(self) -> float:
+        if self._vehicle_local_position is None:
+            raise ValueError("Vehicle Local Position not initialized")
+
+        return self._vehicle_local_position.heading
+
     def arm(self) -> None:
         self.__publish_vehicle_command(
             VehicleCommand.VEHICLE_CMD_COMPONENT_ARM_DISARM, param1=1.0
@@ -114,24 +125,27 @@ class OffboardControl(Node, metaclass=SingletonMeta):
             VehicleCommand.VEHICLE_CMD_DO_SET_MODE, param1=1.0, param2=2.0
         )
 
-    def fly_point(self, x: float, y: float, z: float) -> None:
+    def fly_point(self, x: float, y: float, z: float, yaw: float = None) -> None:
         msg = TrajectorySetpoint()
         msg.position = enu_to_ned(x, y, z)
+        msg.yaw = heading_transform(yaw if yaw is not None else self.heading)
         msg.timestamp = self.__px4_timestamp_now()
         self._trajectory_setpoint_pub.publish(msg)
 
-    def fly_velocity(self, x: float, y: float, z: float) -> None:
+    def fly_velocity(self, x: float, y: float, z: float, yaw: float = None) -> None:
         msg = TrajectorySetpoint()
-        msg.position = None
+        msg.position = [float("nan"), float("nan"), float("nan")]
         msg.velocity = enu_to_ned(x, y, z)
+        msg.yaw = heading_transform(yaw if yaw is not None else self.heading)
         msg.timestamp = self.__px4_timestamp_now()
         self._trajectory_setpoint_pub.publish(msg)
 
-    def fly_acceleration(self, x: float, y: float, z: float) -> None:
+    def fly_acceleration(self, x: float, y: float, z: float, yaw: float = None) -> None:
         msg = TrajectorySetpoint()
-        msg.position = None
-        msg.velocity = None
+        msg.position = [float("nan"), float("nan"), float("nan")]
+        msg.velocity = [float("nan"), float("nan"), float("nan")]
         msg.acceleration = enu_to_ned(x, y, z)
+        msg.yaw = heading_transform(yaw if yaw is not None else self.heading)
         msg.timestamp = self.__px4_timestamp_now()
         self._trajectory_setpoint_pub.publish(msg)
 

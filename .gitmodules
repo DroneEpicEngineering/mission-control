@@ -1,0 +1,3 @@
+[submodule "msgs"]
+	path = msgs
+	url = https://github.com/DroneEpicEngineering/msgs.git

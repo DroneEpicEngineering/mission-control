@@ -15,7 +15,7 @@ RUN sudo apt-get update && sudo apt-get -y --quiet --no-install-recommends insta
     ros-${ROS_DISTRO}-rviz2 \
     && sudo rm -rf /var/lib/apt/lists/*
 
-RUN sudo pip3 install -U numpy
+RUN sudo pip3 install -U "numpy==2.0.2" "matplotlib==3.10.0" "pandas==2.2.2"
 
 RUN sudo apt-get update && sudo apt-get -y --quiet --no-install-recommends install \
     ros-${ROS_DISTRO}-py-trees \
@@ -32,8 +32,11 @@ WORKDIR ${ROS_WS}/src
 COPY . mission-control
 
 WORKDIR ${ROS_WS}
+RUN source "/opt/ros/${ROS_DISTRO}/setup.bash" && \
+    "${ROS_WS}/src/mission-control/scripts/build.bash"
 
 RUN echo "source \"/opt/ros/${ROS_DISTRO}/setup.bash\"" >> "/home/${USERNAME}/.bashrc" && \
-    echo "source \"${ROS_WS}/install/setup.bash\"" >> "/home/${USERNAME}/.bashrc"
+    echo "source \"${ROS_WS}/install/setup.bash\"" >> "/home/${USERNAME}/.bashrc" && \
+    echo "source \"${ROS_WS}/src/mission-control/install/setup.bash\"" >> "/home/${USERNAME}/.bashrc"
 
 CMD ["/bin/bash"]

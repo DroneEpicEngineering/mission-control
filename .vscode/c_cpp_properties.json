@@ -1,0 +1,21 @@
+{
+    "configurations": [
+        {
+            "includePath": [
+                "/home/dee/ws/install/px4_msgs/include/**",
+                "/opt/ros/humble/include/**",
+                "/home/dee/ws/src/Micro-XRCE-DDS-Agent/include/**",
+                "/home/dee/ws/src/simulation/target/include/**",
+                "/usr/include/**",
+                "/home/dee/ws/src/simuation/install/sim_interfaces/include/**",
+                "${workspaceFolder}/install/sim_interfaces/include/sim_interfaces"
+            ],
+            "name": "ROS",
+            "intelliSenseMode": "gcc-x64",
+            "compilerPath": "/usr/bin/g++-11",
+            "cStandard": "gnu11",
+            "cppStandard": "c++23"
+        }
+    ],
+    "version": 4
+}

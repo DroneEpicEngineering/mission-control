@@ -1,0 +1,7 @@
+/config:
+  ros__parameters:
+    algorithm: "frpn"
+    N: 0.83
+    Vd: 2.0
+    G: 19.7
+    W: 0.51

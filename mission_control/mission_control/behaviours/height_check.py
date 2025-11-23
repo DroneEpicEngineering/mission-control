@@ -15,9 +15,10 @@ class HeightCheck(Behaviour):
         self._offboard_control = OffboardControl()
 
     def initialise(self) -> None:
-        x, y, _ = (
-            self._offboard_control.local_position
-        )
+        try:
+            x, y, _ = self._offboard_control.local_position
+        except ValueError:
+            x, y = (0, 0)
         self._position_xy = (x, y)
 
     def update(self) -> Status:
