@@ -33,11 +33,12 @@ class ProportionalNavigation(NavigationStrategy):
         R = calculate_distance(data)
         Vc = calculate_approach_velocity(R, self._state.R, data.dt)
 
-        p_t = np.array([data.target_x, data.target_y, data.target_z])
-        p_d = np.array([data.x, data.y, data.z])
-        dp = p_t - p_d
+        uav_position = np.array(data.uav_odom.position)
+        target_position = np.array(data.target_odom.position)
 
-        a_dir = dp / np.linalg.norm(dp)
+        relative_position = target_position - uav_position
+
+        a_dir = relative_position / np.linalg.norm(relative_position)
         a_n = self._N * Vc * d_los * a_dir
         result = np.clip(a_n, -self._a_max, self._a_max)
 
