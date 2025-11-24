@@ -1,4 +1,5 @@
 import time
+import numpy as np
 
 from py_trees.behaviour import Behaviour
 from py_trees.common import Status, Access
@@ -6,6 +7,7 @@ from py_trees.common import Status, Access
 from flight_control.offboard_control_node import OffboardControl
 from flight_control.navigation import NavigationStrategy, NavigationContext
 from flight_control.navigation.types import NavigationInput, Odometry
+from flight_control.navigation import algorithms as algs
 
 
 class InterceptAction(Behaviour):
@@ -17,6 +19,7 @@ class InterceptAction(Behaviour):
         self._blackboard = self.attach_blackboard_client("intercept_action")
         self._blackboard.register_key("target", access=Access.READ)
         self._prev_time = time.perf_counter()
+        self._pure_pursuit = algs.PurePursuit()
 
     def setup(self, **kwargs) -> None:
         self._offboard_control = OffboardControl()
@@ -43,6 +46,15 @@ class InterceptAction(Behaviour):
             *self._offboard_control.velocity,
             psi=self._offboard_control.heading,
         )
+
+        if np.linalg.norm(
+            np.array(target_odom.position) - np.array(uav_odom.position)
+        ) < 1.0 and type(self._strategy) in (
+            algs.ProportionalNavigation,
+            algs.TrueProportionalNavigation,
+        ):
+            self._offboard_control.get_logger().warn("changing to Pure Pursuit")
+            self._context.strategy = self._pure_pursuit
 
         data = NavigationInput(target_odom, uav_odom, dt=now - self._prev_time)
         result = self._context.execute(data)

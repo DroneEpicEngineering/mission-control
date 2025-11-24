@@ -7,9 +7,11 @@ from flight_control.navigation.algorithms.true_proportional_navigation import (
 from flight_control.navigation.algorithms.fast_response_proportional_navigation import (
     FastResponseProportionalNavigation,
 )
+from flight_control.navigation.algorithms.pure_pursuit import PurePursuit
 
 __name__ = [
     "ProportionalNavigation",
     "TrueProportionalNavigation",
     "FastResponseProportionalNavigation",
+    "PurePursuit",
 ]
