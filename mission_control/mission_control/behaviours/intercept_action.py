@@ -1,13 +1,11 @@
 import time
 
-import numpy as np
-
 from py_trees.behaviour import Behaviour
 from py_trees.common import Status, Access
 
 from flight_control.offboard_control_node import OffboardControl
 from flight_control.navigation import NavigationStrategy, NavigationContext
-from flight_control.navigation.types import NavigationInput, NavigationOutput
+from flight_control.navigation.types import NavigationInput, Odometry
 
 
 class InterceptAction(Behaviour):
@@ -26,20 +24,19 @@ class InterceptAction(Behaviour):
 
     def update(self) -> Status:
         target_data = self._blackboard.get("target")
-        local_position = np.array(self._offboard_control.local_position)
 
         now = time.perf_counter()
 
-        data = NavigationInput(
-            target_x=target_data.pose.position.x,
-            target_y=target_data.pose.position.y,
-            target_z=target_data.pose.position.z,
-            x=local_position[0],
-            y=local_position[1],
-            z=local_position[2],
-            psi=self._offboard_control.heading,
-            dt=now - self._prev_time,
+        target_odom = Odometry(
+            *target_data.pose.position, *target_data.twist.linear, psi=0.0
         )
+        uav_odom = Odometry(
+            *self._offboard_control.local_position,
+            *self._offboard_control.velocity,
+            psi=self._offboard_control.heading,
+        )
+
+        data = NavigationInput(target_odom, uav_odom, dt=now - self._prev_time)
         result = self._context.execute(data)
 
         self._offboard_control.get_logger().warn(f"\n{data}\n{result}\n")
