@@ -36,4 +36,8 @@ class FastResponseProportionalNavigation(NavigationStrategy):
         )
         result = np.clip(a_cmd, -self._a_max, self._a_max)
 
-        return NavigationOutput(ax=result[0], ay=result[1], az=result[2], psi=data.psi)
+        psi = np.arctan2(relative_position[1], relative_position[0])
+
+        return NavigationOutput(
+            ax=result[0], ay=result[1], az=result[2], psi=psi
+        )

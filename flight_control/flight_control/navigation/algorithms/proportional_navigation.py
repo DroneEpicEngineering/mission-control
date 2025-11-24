@@ -3,46 +3,45 @@ import numpy as np
 from flight_control.navigation.types import (
     NavigationInput,
     NavigationOutput,
-    NavigationState,
 )
 from flight_control.navigation import NavigationStrategy
-from flight_control.navigation.calculations import (
-    calculate_distance,
-    calculate_approach_velocity,
-    calculate_los,
-    calculate_los_change,
-)
 
 
 class ProportionalNavigation(NavigationStrategy):
     def __init__(self, a_max=1.0, **kwargs) -> None:
         super().__init__(a_max)
-        self._state: NavigationState = None
+        self._state = None
         self._N = kwargs.get("N", 4)
-        self._Vd = kwargs.get("Vd", 2)
 
     def setup(self, data: NavigationInput) -> None:
-        self._state = NavigationState(
-            los=calculate_los(data),
-            R=calculate_distance(data),
-        )
+        pass
 
     def execute(self, data: NavigationInput) -> NavigationOutput:
-        los = calculate_los(data)
-        d_los = calculate_los_change(los, self._state.los, data.dt)
-        R = calculate_distance(data)
-        Vc = calculate_approach_velocity(R, self._state.R, data.dt)
-
         uav_position = np.array(data.uav_odom.position)
+        uav_velocity = np.array(data.uav_odom.velocity)
+
         target_position = np.array(data.target_odom.position)
+        target_velocity = np.array(data.target_odom.velocity)
 
         relative_position = target_position - uav_position
+        relative_velocity = target_velocity - uav_velocity
+        distance = np.linalg.norm(relative_position)
 
-        a_dir = relative_position / np.linalg.norm(relative_position)
-        a_n = self._N * Vc * d_los * a_dir
-        result = np.clip(a_n, -self._a_max, self._a_max)
+        unit_position = relative_position / distance
 
-        psi = data.psi + (a_n / self._Vd) * data.dt
+        closing_velocity = -np.dot(unit_position, relative_velocity)
+
+        dv_lateral = relative_velocity - np.dot(relative_velocity, unit_position) * unit_position
+        u_dot = dv_lateral / distance
+
+        lambda_dot = np.linalg.norm(u_dot)
+
+        a_dir = u_dot / lambda_dot
+        a_cmd = self._N * closing_velocity * lambda_dot * a_dir
+
+        a_cmd = np.clip(a_cmd, -self._a_max, self._a_max)
+
+        psi = data.uav_odom.psi + (a_cmd[0:2].dot([1, 1]) / 1.0) * data.dt
         psi = np.arctan2(np.sin(psi), np.cos(psi))
 
-        return NavigationOutput(ax=result[0], ay=result[1], az=result[2], psi=psi)
+        return NavigationOutput(ax=a_cmd[0], ay=a_cmd[1], az=a_cmd[2], psi=psi)

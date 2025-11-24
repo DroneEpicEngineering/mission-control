@@ -24,11 +24,19 @@ class InterceptAction(Behaviour):
 
     def update(self) -> Status:
         target_data = self._blackboard.get("target")
+        target_position = target_data.pose.position
+        target_twist = target_data.twist.linear
 
         now = time.perf_counter()
 
         target_odom = Odometry(
-            *target_data.pose.position, *target_data.twist.linear, psi=0.0
+            target_position.x,
+            target_position.y,
+            target_position.z,
+            target_twist.x,
+            target_twist.y,
+            target_twist.z,
+            psi=0.0,
         )
         uav_odom = Odometry(
             *self._offboard_control.local_position,
