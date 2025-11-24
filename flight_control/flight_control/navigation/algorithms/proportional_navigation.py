@@ -5,6 +5,11 @@ from flight_control.navigation.types import (
     NavigationOutput,
 )
 from flight_control.navigation import NavigationStrategy
+from flight_control.navigation.calculations import (
+    calculate_los,
+    calculate_los_change,
+)
+from flight_control.navigation.types import NavigationState
 
 
 class ProportionalNavigation(NavigationStrategy):
@@ -14,34 +19,27 @@ class ProportionalNavigation(NavigationStrategy):
         self._N = kwargs.get("N", 4)
 
     def setup(self, data: NavigationInput) -> None:
-        pass
+        self._state = NavigationState(los=calculate_los(data), R=0)
 
     def execute(self, data: NavigationInput) -> NavigationOutput:
         uav_position = np.array(data.uav_odom.position)
         uav_velocity = np.array(data.uav_odom.velocity)
-
         target_position = np.array(data.target_odom.position)
         target_velocity = np.array(data.target_odom.velocity)
 
         relative_position = target_position - uav_position
         relative_velocity = target_velocity - uav_velocity
-        distance = np.linalg.norm(relative_position)
 
-        unit_position = relative_position / distance
+        position_norm = np.linalg.norm(relative_position)
+        velocity_norm = np.linalg.norm(relative_velocity)
 
-        closing_velocity = -np.dot(unit_position, relative_velocity)
+        los = calculate_los(data)
+        d_los = calculate_los_change(los, self._state.los, data.dt)
 
-        dv_lateral = relative_velocity - np.dot(relative_velocity, unit_position) * unit_position
-        u_dot = dv_lateral / distance
+        a_dir = relative_position / position_norm
+        a_n = self._N * velocity_norm * d_los * a_dir
+        result = np.clip(a_n, -self._a_max, self._a_max)
 
-        lambda_dot = np.linalg.norm(u_dot)
+        psi = np.arctan2(relative_position[1], relative_position[0])
 
-        a_dir = u_dot / lambda_dot
-        a_cmd = self._N * closing_velocity * lambda_dot * a_dir
-
-        a_cmd = np.clip(a_cmd, -self._a_max, self._a_max)
-
-        psi = data.uav_odom.psi + (a_cmd[0:2].dot([1, 1]) / 1.0) * data.dt
-        psi = np.arctan2(np.sin(psi), np.cos(psi))
-
-        return NavigationOutput(ax=a_cmd[0], ay=a_cmd[1], az=a_cmd[2], psi=psi)
+        return NavigationOutput(ax=result[0], ay=result[1], az=result[2], psi=psi)
