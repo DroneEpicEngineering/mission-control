@@ -176,3 +176,5 @@ cython_debug/
 build
 install
 log
+
+positions_log_*.csv
