@@ -87,12 +87,6 @@ class PositionLogger(Node):
                 ]
             )
 
-        self.get_logger().info(
-            f"Logged at {sim_time:.2f}s: "
-            f"Drone ({self.drone_pos.x:.2f},{self.drone_pos.y:.2f},{self.drone_pos.z:.2f}), "
-            f"Target ({self.target_pos.x:.2f},{self.target_pos.y:.2f},{self.target_pos.z:.2f})"
-        )
-
 
 def main(args=None):
     rclpy.init(args=args)
