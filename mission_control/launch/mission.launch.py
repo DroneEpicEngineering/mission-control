@@ -1,4 +1,3 @@
-import os
 from ament_index_python import get_package_share_path
 from launch import LaunchDescription
 from launch.actions import ExecuteProcess, DeclareLaunchArgument
@@ -36,10 +35,10 @@ def generate_launch_description():
         parameters=[params_file],
     )
 
-    rviz = Node(
-        executable="rviz2",
-        package="rviz2",
-        arguments=["-d", rviz_config]
+    rviz = Node(executable="rviz2", package="rviz2", arguments=["-d", rviz_config])
+
+    logger = Node(
+        executable="position_logger", package="position_logger", output="screen"
     )
 
     ld = LaunchDescription()
@@ -52,5 +51,6 @@ def generate_launch_description():
     ld.add_action(behaviour_tree)
     ld.add_action(visualizer)
     ld.add_action(rviz)
+    ld.add_action(logger)
 
     return ld
