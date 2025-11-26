@@ -41,11 +41,12 @@ class TrueProportionalNavigation(NavigationStrategy):
         ax = a_n * n_los_x
         ay = a_n * n_los_y
 
-        p_t = np.array([data.target_x, data.target_y, data.target_z])
-        p_d = np.array([data.x, data.y, data.z])
-        dp = p_t - p_d
+        uav_position = np.array(data.uav_odom.position)
+        target_position = np.array(data.target_odom.position)
 
-        a_dir = dp / np.linalg.norm(dp)
+        relative_position = target_position - uav_position
+
+        a_dir = relative_position / np.linalg.norm(relative_position)
         a_cmd = np.array([ax * a_dir[0], ay * a_dir[1], 1 * a_dir[2]])
         result = np.clip(a_cmd, -self._a_max, self._a_max)
 

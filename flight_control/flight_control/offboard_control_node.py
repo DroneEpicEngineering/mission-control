@@ -93,6 +93,17 @@ class OffboardControl(Node, metaclass=SingletonMeta):
         )
 
     @property
+    def velocity(self) -> tuple[float, float, float]:
+        if self._vehicle_local_position is None:
+            raise ValueError("Vehicle Local Postion not initialized")
+
+        return ned_to_enu(
+            self._vehicle_local_position.vx,
+            self._vehicle_local_position.vy,
+            self._vehicle_local_position.vz,
+        )
+
+    @property
     def heading(self) -> float:
         if self._vehicle_local_position is None:
             raise ValueError("Vehicle Local Position not initialized")
