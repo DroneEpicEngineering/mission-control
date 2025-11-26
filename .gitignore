@@ -178,3 +178,4 @@ install
 log
 
 positions_log_*.csv
+rosbag*

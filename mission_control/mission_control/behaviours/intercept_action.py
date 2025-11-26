@@ -59,8 +59,6 @@ class InterceptAction(Behaviour):
         data = NavigationInput(target_odom, uav_odom, dt=now - self._prev_time)
         result = self._context.execute(data)
 
-        self._offboard_control.get_logger().warn(f"\n{data}\n{result}\n")
-
         self._offboard_control.fly_acceleration(
             result.ax,
             result.ay,

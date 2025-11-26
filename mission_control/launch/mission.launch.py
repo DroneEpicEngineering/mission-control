@@ -41,6 +41,8 @@ def generate_launch_description():
         executable="position_logger", package="position_logger", output="screen"
     )
 
+    bag = ExecuteProcess(cmd=["ros2", "bag", "record", "-a"])
+
     ld = LaunchDescription()
 
     ld.add_action(params_file_arg)
@@ -52,5 +54,6 @@ def generate_launch_description():
     ld.add_action(visualizer)
     ld.add_action(rviz)
     ld.add_action(logger)
+    ld.add_action(bag)
 
     return ld
