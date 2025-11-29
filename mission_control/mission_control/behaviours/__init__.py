@@ -6,6 +6,10 @@ from .offboard_check import OffboardCheck
 from .takeoff_action import TakeoffAction
 from .wait_for_connection import WaitForConnection
 from .intercept_action import InterceptAction
+from .return_action import ReturnAction
+from .finished_check import FinishedCheck
+from .handle_target_action import HandleTargetAction
+from .setup_action import SetupAction
 
 __all__ = [
     "ArmAction",
@@ -15,5 +19,9 @@ __all__ = [
     "OffboardCheck",
     "TakeoffAction",
     "WaitForConnection",
-    "InterceptAction"
+    "InterceptAction",
+    "ReturnAction",
+    "FinishedCheck",
+    "HandleTargetAction",
+    "SetupAction"
 ]
