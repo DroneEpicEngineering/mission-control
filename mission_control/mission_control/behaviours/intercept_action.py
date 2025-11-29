@@ -18,8 +18,11 @@ class InterceptAction(Behaviour):
         self._strategy = strategy
         self._blackboard = self.attach_blackboard_client("intercept_action")
         self._blackboard.register_key("target", access=Access.READ)
+        self._blackboard.register_key("finish", access=Access.WRITE)
         self._prev_time = time.perf_counter()
         self._pure_pursuit = algs.PurePursuit()
+        self._prev_timestamp = None
+        self._distance_threshold = 50
 
     def setup(self, **kwargs) -> None:
         self._offboard_control = OffboardControl()
@@ -27,6 +30,7 @@ class InterceptAction(Behaviour):
 
     def update(self) -> Status:
         target_data = self._blackboard.get("target")
+
         target_position = target_data.pose.position
         target_twist = target_data.twist.linear
 
@@ -46,6 +50,13 @@ class InterceptAction(Behaviour):
             *self._offboard_control.velocity,
             psi=self._offboard_control.heading,
         )
+
+        if (
+            uav_odom.position[0] >= self._distance_threshold
+            or uav_odom.position[1] >= self._distance_threshold
+        ):
+            self._blackboard.set("finish", value=True)
+            return Status.FAILURE
 
         if np.linalg.norm(
             np.array(target_odom.position) - np.array(uav_odom.position)

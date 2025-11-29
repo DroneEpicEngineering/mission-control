@@ -31,7 +31,9 @@ def parameters() -> dict:
     params["algorithm"] = (
         param_reader.get_parameter("algorithm").get_parameter_value().string_value
     )
-    params["a_max"] = param_reader.get_parameter("a_max").get_parameter_value().double_value
+    params["a_max"] = (
+        param_reader.get_parameter("a_max").get_parameter_value().double_value
+    )
     params["N"] = param_reader.get_parameter("N").get_parameter_value().double_value
     params["Vd"] = param_reader.get_parameter("Vd").get_parameter_value().double_value
     params["G"] = param_reader.get_parameter("G").get_parameter_value().double_value
@@ -57,9 +59,10 @@ def strategy_setup(params: dict) -> NavigationStrategy:
             return algs.ProportionalNavigation()
 
 
-def create_behaviour_tree(params) -> Composite:
+def create_behaviour_tree(node, params) -> Composite:
     startup = Sequence("startup", memory=True)
 
+    setup = behaviours.SetupAction("setup")
     establish_connection = behaviours.WaitForConnection("establish_connection")
     get_in_the_air = Selector("get_in_the_air", memory=False)
 
@@ -83,7 +86,7 @@ def create_behaviour_tree(params) -> Composite:
 
     system = Selector("system", memory=False)
 
-    # is_mission_finished
+    is_mission_finished = behaviours.FinishedCheck("is_finished")
     mission = Sequence("mission", memory=False)
 
     wait_for_start = WaitForData(
@@ -94,18 +97,13 @@ def create_behaviour_tree(params) -> Composite:
         clearing_policy=ClearingPolicy.NEVER,
     )
 
-    gather_target_data = ToBlackboard(
-        "gather_target_data",
-        topic_name="/follow_trajectory/_action/feedback",
-        topic_type=FollowTrajectory_FeedbackMessage,
-        qos_profile=10,
-        blackboard_variables={"target": "feedback"},
-    )
+    handle_target = behaviours.HandleTargetAction("handle_target", node=node)
 
-    intercept_action = behaviours.InterceptAction(
-        "intercept", strategy=strategy_setup(params)
-    )
+    intercept = behaviours.InterceptAction("intercept", strategy=strategy_setup(params))
 
+    return_to_launch = behaviours.ReturnAction("return_action")
+
+    startup.add_child(setup)
     startup.add_child(establish_connection)
     startup.add_child(get_in_the_air)
 
@@ -126,20 +124,23 @@ def create_behaviour_tree(params) -> Composite:
 
     startup.add_child(system)
 
-    # system.add_child(is_mission_finished)
+    system.add_child(is_mission_finished)
     system.add_child(mission)
 
     mission.add_child(wait_for_start)
-    mission.add_child(gather_target_data)
-    mission.add_child(intercept_action)
+    mission.add_child(handle_target)
+    mission.add_child(intercept)
+
+    startup.add_child(return_to_launch)
 
     return startup
 
 
 def main(args=None):
     rclpy.init()
+    node = rclpy.create_node("mission")
     params = parameters()
-    root = create_behaviour_tree(params)
+    root = create_behaviour_tree(node, params)
     tree = BehaviourTree(root=root)
     offboard_control = OffboardControl()
     try:
@@ -151,6 +152,7 @@ def main(args=None):
     executor = MultiThreadedExecutor()
     executor.add_node(offboard_control)
     executor.add_node(tree.node)
+    executor.add_node(node)
 
     tree.tick_tock(period_ms=10.0)
 
