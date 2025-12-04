@@ -3,16 +3,15 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 from matplotlib.animation import FuncAnimation
-from mpl_toolkits.mplot3d import Axes3D
 from matplotlib.widgets import Button
 
 from flight_control.navigation import algorithms as algs
 from flight_control.navigation import NavigationContext
 from flight_control.navigation.types import NavigationInput, Odometry
 
-DELTA_TIME = 0.02
+DELTA_TIME = 0.2
 
-strategy = algs.FastResponseProportionalNavigation(G=19.7, W=0.51)
+strategy = algs.FastResponseProportionalNavigation(G=19.7, W=0.051, a_max=0.2)
 context = NavigationContext(strategy)
 
 target_data = pd.read_csv("data/test_trajectory.csv")
@@ -32,20 +31,20 @@ for _, row in target_data.iterrows():
         psi=0.0,
     )
 
-    target_trajectory.append(target_data)
-    uav_trajectory.append(uav_data)
-
     data = NavigationInput(target_odom=target_data, uav_odom=uav_data, dt=DELTA_TIME)
     result = context.execute(data)
 
-    uav_velocity = (
-        float(result.ax) * DELTA_TIME,
-        float(result.ay) * DELTA_TIME,
-        float(result.az) * DELTA_TIME,
-    )
-    uav_position = list(vel * DELTA_TIME for vel in uav_velocity)
+    current_position = np.array(uav_data.position)
+    current_velocity = np.array(uav_data.velocity)
+    acceleration = np.array([result.ax, result.ay, result.az])
 
-    uav_data = Odometry(*uav_position, *uav_velocity, psi=0.0)
+    new_velocity = current_velocity + (acceleration * DELTA_TIME)
+    new_position = current_position + (current_velocity * DELTA_TIME)
+
+    uav_data = Odometry(*new_position, *new_velocity, psi=float(result.psi))
+
+    target_trajectory.append(target_data)
+    uav_trajectory.append(uav_data)
 
 
 # Convert to numpy arrays for easier manipulation
@@ -81,7 +80,7 @@ animation = None
 
 def set_equal_aspect_ratio():
     """Set equal aspect ratio for 3D plot"""
-    limit = 10
+    limit = 30
     ax.set_xlim(-limit, limit)
     ax.set_ylim(-limit, limit)
     ax.set_zlim(-limit, limit)
@@ -224,5 +223,4 @@ plt.figtext(
     bbox=dict(boxstyle="round,pad=0.3", facecolor="lightgray"),
 )
 
-plt.tight_layout()
 plt.show()

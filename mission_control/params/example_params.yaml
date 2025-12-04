@@ -1,8 +1,8 @@
 /config:
   ros__parameters:
     algorithm: "frpn"
-    a_max: 10.0
+    a_max: 0.02
     N: 0.83
     Vd: 2.0
     G: 19.7
-    W: 0.51
+    W: 0.051
