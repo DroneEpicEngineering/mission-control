@@ -12,9 +12,8 @@ from px4_msgs.msg import (
 from utils.qos_profiles import PX4_PROFILE
 
 from flight_control.coordinate_transforms import (
-    enu_to_ned,
-    ned_to_enu,
     heading_transform,
+    SpatialVector,
 )
 
 
@@ -82,22 +81,22 @@ class OffboardControl(Node, metaclass=SingletonMeta):
         return self._vehicle_status.arming_state == VehicleStatus.ARMING_STATE_ARMED
 
     @property
-    def local_position(self) -> tuple[float, float, float]:
+    def local_position(self) -> SpatialVector:
         if self._vehicle_local_position is None:
             raise ValueError("Vehicle Local Position not initialized")
 
-        return ned_to_enu(
+        return SpatialVector.from_ned(
             self._vehicle_local_position.x,
             self._vehicle_local_position.y,
             self._vehicle_local_position.z,
         )
 
     @property
-    def velocity(self) -> tuple[float, float, float]:
+    def velocity(self) -> SpatialVector:
         if self._vehicle_local_position is None:
             raise ValueError("Vehicle Local Postion not initialized")
 
-        return ned_to_enu(
+        return SpatialVector.from_ned(
             self._vehicle_local_position.vx,
             self._vehicle_local_position.vy,
             self._vehicle_local_position.vz,
@@ -136,39 +135,39 @@ class OffboardControl(Node, metaclass=SingletonMeta):
             VehicleCommand.VEHICLE_CMD_DO_SET_MODE, param1=1.0, param2=2.0
         )
 
-    def fly_point(self, x: float, y: float, z: float, yaw: float = None) -> None:
+    def fly_point(self, point: SpatialVector, yaw: float = None) -> None:
         msg = TrajectorySetpoint()
-        msg.position = enu_to_ned(x, y, z)
+        msg.position = point.as_ned()
         msg.yaw = heading_transform(yaw if yaw is not None else self.heading)
         msg.timestamp = self.__px4_timestamp_now()
         self._trajectory_setpoint_pub.publish(msg)
 
-    def fly_velocity(self, x: float, y: float, z: float, yaw: float = None) -> None:
+    def fly_velocity(self, velocity: SpatialVector, yaw: float = None) -> None:
         msg = TrajectorySetpoint()
         msg.position = [float("nan"), float("nan"), float("nan")]
-        msg.velocity = enu_to_ned(x, y, z)
+        msg.velocity = velocity.as_ned()
         msg.yaw = heading_transform(yaw if yaw is not None else self.heading)
         msg.timestamp = self.__px4_timestamp_now()
         self._trajectory_setpoint_pub.publish(msg)
 
-    def fly_acceleration(self, x: float, y: float, z: float, yaw: float = None) -> None:
+    def fly_acceleration(self, acceleration: SpatialVector, yaw: float = None) -> None:
         msg = TrajectorySetpoint()
         msg.position = [float("nan"), float("nan"), float("nan")]
         msg.velocity = [float("nan"), float("nan"), float("nan")]
-        msg.acceleration = enu_to_ned(x, y, z)
+        msg.acceleration = acceleration.as_ned()
         msg.yaw = heading_transform(yaw if yaw is not None else self.heading)
         msg.timestamp = self.__px4_timestamp_now()
         self._trajectory_setpoint_pub.publish(msg)
 
-    def is_position_reached(self, x: float, y: float, z: float, epsilon=0.1) -> None:
-        target_ned = enu_to_ned(x, y, z)
+    def is_position_reached(self, target_position: SpatialVector, epsilon=0.1) -> None:
         position = (
             self._vehicle_local_position.x,
             self._vehicle_local_position.y,
             self._vehicle_local_position.z,
         )
         return all(
-            abs(pos - target) <= epsilon for pos, target in zip(position, target_ned)
+            abs(pos - target) <= epsilon
+            for pos, target in zip(position, target_position.as_ned())
         )
 
     def __heartbeat_timer_cb(self) -> None:

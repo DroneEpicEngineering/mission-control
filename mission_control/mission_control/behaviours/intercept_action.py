@@ -5,6 +5,7 @@ from py_trees.behaviour import Behaviour
 from py_trees.common import Status, Access
 
 from flight_control.offboard_control_node import OffboardControl
+from flight_control.coordinate_transforms import SpatialVector
 from flight_control.navigation import NavigationStrategy, NavigationContext
 from flight_control.navigation.types import NavigationInput, Odometry
 from flight_control.navigation import algorithms as algs
@@ -46,8 +47,8 @@ class InterceptAction(Behaviour):
             psi=0.0,
         )
         uav_odom = Odometry(
-            *self._offboard_control.local_position,
-            *self._offboard_control.velocity,
+            *self._offboard_control.local_position.as_enu(),
+            *self._offboard_control.velocity.as_enu(),
             psi=self._offboard_control.heading,
         )
 
@@ -71,9 +72,7 @@ class InterceptAction(Behaviour):
         result = self._context.execute(data)
 
         self._offboard_control.fly_acceleration(
-            result.ax,
-            result.ay,
-            result.az,
+            SpatialVector.from_enu(result.ax, result.ay, result.az),
             yaw=result.psi,
         )
 
