@@ -159,7 +159,10 @@ class OffboardControl(Node, metaclass=SingletonMeta):
         msg.timestamp = self.__px4_timestamp_now()
         self._trajectory_setpoint_pub.publish(msg)
 
-    def is_position_reached(self, target_position: SpatialVector, epsilon=0.1) -> None:
+    def is_position_reached(self, target_position: SpatialVector, epsilon=0.1) -> bool:
+        if self._vehicle_local_position is None:
+            raise ValueError("Vehicle Local Position not initialized")
+
         position = (
             self._vehicle_local_position.x,
             self._vehicle_local_position.y,
