@@ -29,14 +29,10 @@ class FastResponseProportionalNavigation(NavigationStrategy):
         tgo = position_norm / velocity_norm
 
         a_cmd = self._G * (
-            (1 - self._W) * (relative_position + relative_velocity * tgo) / (tgo**2)
+            (1 - self._W) * ((relative_position + relative_velocity * tgo) / (tgo**2))
             + self._W * relative_position
         )
-        # result = np.clip(a_cmd, -self._a_max, self._a_max)
-        result = a_cmd
-
+        result = np.clip(a_cmd, -self._a_max, self._a_max)
         psi = np.arctan2(relative_position[1], relative_position[0])
 
-        return NavigationOutput(
-            ax=result[0], ay=result[1], az=result[2], psi=psi
-        )
+        return NavigationOutput(ax=result[0], ay=result[1], az=result[2], psi=psi)

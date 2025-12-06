@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 
 from flight_control.navigation import algorithms as algs
 from flight_control.navigation import NavigationContext
-from flight_control.navigation.types import NavigationInput
+from flight_control.navigation.types import NavigadatationInput
 
 DELTA_TIME = 0.02
 
