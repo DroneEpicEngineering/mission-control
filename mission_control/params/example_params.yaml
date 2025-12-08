@@ -6,3 +6,8 @@
     Vd: 2.0
     G: 19.7
     W: 0.051
+
+    trajectory_index: 42
+    takeoff_height: 5.0
+    mission_threshold: 50
+    distance_threshold: 3.0

@@ -26,6 +26,10 @@ def parameters() -> dict:
     param_reader.declare_parameter("Vd", value=2.0)
     param_reader.declare_parameter("G", value=2.0)
     param_reader.declare_parameter("W", value=2.0)
+    param_reader.declare_parameter("trajectory_index", value=1)
+    param_reader.declare_parameter("takeoff_height", value=5.0)
+    param_reader.declare_parameter("mission_threshold", value=50)
+    param_reader.declare_parameter("distance_threshold", value=3.0)
 
     params["algorithm"] = (
         param_reader.get_parameter("algorithm").get_parameter_value().string_value
@@ -37,6 +41,24 @@ def parameters() -> dict:
     params["Vd"] = param_reader.get_parameter("Vd").get_parameter_value().double_value
     params["G"] = param_reader.get_parameter("G").get_parameter_value().double_value
     params["W"] = param_reader.get_parameter("W").get_parameter_value().double_value
+    params["trajectory_index"] = (
+        param_reader.get_parameter("trajectory_index")
+        .get_parameter_value()
+        .integer_value
+    )
+    params["takeoff_height"] = (
+        param_reader.get_parameter("takeoff_height").get_parameter_value().double_value
+    )
+    params["mission_threshold"] = (
+        param_reader.get_parameter("mission_threshold")
+        .get_parameter_value()
+        .integer_value
+    )
+    params["distance_threshold"] = (
+        param_reader.get_parameter("distance_threshold")
+        .get_parameter_value()
+        .double_value
+    )
 
     param_reader.get_logger().info(
         f"starting the system with following parameters:\n{params}"
@@ -65,7 +87,7 @@ def create_behaviour_tree(node, params) -> Composite:
     establish_connection = behaviours.WaitForConnection("establish_connection")
     get_in_the_air = Selector("get_in_the_air", memory=False)
 
-    is_in_air = behaviours.HeightCheck("is_in_air")
+    is_in_air = behaviours.HeightCheck("is_in_air", height=3.0)
     takeoff = Sequence("takeoff", memory=False)
 
     ensure_offboard = Selector("ensure_offboard", memory=False)
@@ -80,8 +102,10 @@ def create_behaviour_tree(node, params) -> Composite:
 
     gain_altitude = Selector("gain_altitude", memory=False)
 
-    is_height_reached = behaviours.HeightCheck("is_height_reached")
-    fly_up = behaviours.TakeoffAction("fly_up")
+    is_height_reached = behaviours.HeightCheck(
+        "is_height_reached", height=params["takeoff_height"]
+    )
+    fly_up = behaviours.TakeoffAction("fly_up", takeoff_height=params["takeoff_height"])
 
     system = Selector("system", memory=False)
 
@@ -96,9 +120,16 @@ def create_behaviour_tree(node, params) -> Composite:
         clearing_policy=ClearingPolicy.NEVER,
     )
 
-    handle_target = behaviours.HandleTargetAction("handle_target", node=node)
+    handle_target = behaviours.HandleTargetAction(
+        "handle_target", node=node, trajectory_index=params["trajectory_index"]
+    )
 
-    intercept = behaviours.InterceptAction("intercept", strategy=strategy_setup(params))
+    intercept = behaviours.InterceptAction(
+        "intercept",
+        strategy=strategy_setup(params),
+        mission_threshold=params["mission_threshold"],
+        distance_threshold=params["distance_threshold"],
+    )
 
     return_to_launch = behaviours.ReturnAction("return")
 
