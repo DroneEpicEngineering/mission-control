@@ -1,0 +1,18 @@
+{
+    "name": "base",
+    "image": "ghcr.io/droneepicengineering/base:latest",
+    "remoteUser": "dee",
+    "runArgs": [
+        "--network=host",
+        "--ipc=host",
+        "--volume=/tmp/.X11-unix:/tmp/.X11-unix",
+        "--device=/dev/dri",
+        "--privileged"
+    ],
+    "workspaceMount": "source=${localWorkspaceFolder}/,target=/home/dee/ws/src/msgs,type=bind,consistency=cached",
+    "workspaceFolder": "/home/dee/ws/src/msgs",
+    "containerEnv": {
+        "DISPLAY": "${localEnv:DISPLAY}",
+        "ROS_DOMAIN_ID": "0"
+    }
+}
