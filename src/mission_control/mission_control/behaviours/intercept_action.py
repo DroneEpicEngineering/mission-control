@@ -12,7 +12,13 @@ from flight_control.navigation import algorithms as algs
 
 
 class InterceptAction(Behaviour):
-    def __init__(self, name: str, strategy: NavigationStrategy) -> None:
+    def __init__(
+        self,
+        name: str,
+        strategy: NavigationStrategy,
+        mission_threshold: int = 50,
+        distance_threshold: float = 3.0,
+    ) -> None:
         super().__init__(name)
         self._offboard_control: OffboardControl = None
         self._context: NavigationContext = None
@@ -23,7 +29,9 @@ class InterceptAction(Behaviour):
         self._prev_time = time.perf_counter()
         self._pure_pursuit = algs.PurePursuit()
         self._prev_timestamp = None
-        self._distance_threshold = 50
+
+        self._mission_threshold = mission_threshold
+        self._distance_threshold = distance_threshold
 
     def setup(self, **kwargs) -> None:
         self._offboard_control = OffboardControl()
@@ -53,10 +61,13 @@ class InterceptAction(Behaviour):
         )
 
         if (
-            uav_odom.position[0] >= self._distance_threshold
-            or uav_odom.position[1] >= self._distance_threshold
+            uav_odom.position[0] >= self._mission_threshold
+            or uav_odom.position[1] >= self._mission_threshold
         ):
             self._blackboard.set("finish", value=True)
+            self._offboard_control.get_logger().error(
+                "Out of mission boundary, returning."
+            )
             return Status.FAILURE
 
         if np.linalg.norm(
@@ -67,6 +78,16 @@ class InterceptAction(Behaviour):
         ):
             self._offboard_control.get_logger().warn("changing to Pure Pursuit")
             self._context.strategy = self._pure_pursuit
+
+        if (
+            np.linalg.norm(np.array(target_odom.position) - np.array(uav_odom.position))
+            < self._distance_threshold
+        ):
+            self._offboard_control.get_logger().info("Stopping to avoid collision.")
+            self._offboard_control.fly_acceleration(SpatialVector.from_origin())
+
+            self._prev_time = time.perf_counter()
+            return Status.RUNNING
 
         data = NavigationInput(target_odom, uav_odom, dt=now - self._prev_time)
         result = self._context.execute(data)

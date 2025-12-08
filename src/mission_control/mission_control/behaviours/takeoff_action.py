@@ -6,9 +6,9 @@ from flight_control.coordinate_transforms import SpatialVector
 
 
 class TakeoffAction(Behaviour):
-    def __init__(self, name: str) -> None:
+    def __init__(self, name: str, takeoff_height: float = 5.0) -> None:
         super().__init__(name)
-        self._target_height = 5.0
+        self._target_height = takeoff_height
         self._offboard_control: OffboardControl = None
         self._current_position = SpatialVector.from_origin()
         self._command_sent = False

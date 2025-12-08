@@ -10,7 +10,7 @@ from system_interfaces.action._follow_trajectory import FollowTrajectory_Feedbac
 
 
 class HandleTargetAction(Behaviour):
-    def __init__(self, name: str, node: Node) -> None:
+    def __init__(self, name: str, node: Node, trajectory_index: int = 1) -> None:
         super().__init__(name)
         self._node = node
         self._action_client: ActionClient = None
@@ -23,6 +23,8 @@ class HandleTargetAction(Behaviour):
         self._blackboard.register_key("target", access=Access.WRITE)
         self._blackboard.register_key("finish", access=Access.WRITE)
 
+        self._trajectory_index = trajectory_index
+
     def setup(self, **kwargs) -> None:
         self._action_client = ActionClient(
             self._node, FollowTrajectory, "follow_trajectory"
@@ -30,7 +32,7 @@ class HandleTargetAction(Behaviour):
 
     def initialise(self) -> None:
         goal_msg = FollowTrajectory.Goal()
-        goal_msg.trajectory_index = 1
+        goal_msg.trajectory_index = self._trajectory_index
 
         self._action_client.wait_for_server()
 

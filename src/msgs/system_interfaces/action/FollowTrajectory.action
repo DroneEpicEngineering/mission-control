@@ -1,0 +1,7 @@
+int32 trajectory_index
+---
+bool success
+---
+geometry_msgs/Pose pose
+geometry_msgs/Twist twist
+std_msgs/Header header
