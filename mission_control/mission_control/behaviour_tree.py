@@ -6,13 +6,12 @@ from py_trees.common import ClearingPolicy
 
 from py_trees_ros.trees import BehaviourTree
 from py_trees_ros.exceptions import TimedOutError
-from py_trees_ros.subscribers import ToBlackboard, WaitForData
+from py_trees_ros.subscribers import WaitForData
 
 from std_msgs.msg import Empty
 
 from flight_control.offboard_control_node import OffboardControl
 from flight_control.navigation import NavigationStrategy, algorithms as algs
-from system_interfaces.action._follow_trajectory import FollowTrajectory_FeedbackMessage
 
 from mission_control import behaviours
 
@@ -101,7 +100,7 @@ def create_behaviour_tree(node, params) -> Composite:
 
     intercept = behaviours.InterceptAction("intercept", strategy=strategy_setup(params))
 
-    return_to_launch = behaviours.ReturnAction("return_action")
+    return_to_launch = behaviours.ReturnAction("return")
 
     startup.add_child(setup)
     startup.add_child(establish_connection)

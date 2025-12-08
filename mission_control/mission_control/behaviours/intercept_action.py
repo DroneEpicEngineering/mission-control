@@ -57,6 +57,7 @@ class InterceptAction(Behaviour):
             or uav_odom.position[1] >= self._distance_threshold
         ):
             self._blackboard.set("finish", value=True)
+            self._offboard_control.get_logger().error("Out of mission boundary, returning.")
             return Status.FAILURE
 
         if np.linalg.norm(

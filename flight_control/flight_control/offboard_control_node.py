@@ -187,6 +187,7 @@ class OffboardControl(Node, metaclass=SingletonMeta):
         msg.body_rate = False
         msg.thrust_and_torque = False
         msg.direct_actuator = False
+        msg.timestamp = self.__px4_timestamp_now()
         self._offboard_control_mode_pub.publish(msg)
 
     def __publish_vehicle_command(self, command: int, **kwargs) -> None:
