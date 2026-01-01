@@ -29,7 +29,7 @@ RUN source "/opt/ros/${ROS_DISTRO}/setup.bash" && \
     colcon build
 
 WORKDIR ${ROS_WS}/src
-COPY . mission-control
+COPY --chown=${USERNAME} . mission-control
 
 WORKDIR ${ROS_WS}
 RUN source "/opt/ros/${ROS_DISTRO}/setup.bash" && \
