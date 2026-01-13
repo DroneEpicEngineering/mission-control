@@ -1,13 +1,11 @@
 /config:
   ros__parameters:
     algorithm: "frpn"
-    a_max: 1.0
-    N: 0.83
-    Vd: 2.0
-    G: 19.7
+    a_max: 2.0
+    G: 5.0
     W: 0.051
 
-    trajectory_index: 42
+    trajectory_index: 1
     takeoff_height: 5.0
     mission_threshold: 50
     distance_threshold: 3.0
